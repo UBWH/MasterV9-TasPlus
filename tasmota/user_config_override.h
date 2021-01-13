@@ -128,6 +128,7 @@ Examples :
 #define USE_PING                //Include Ping
 #endif
 // Remove unnecessary modules
+#undef USE_SHELLY_DIMMER
 #undef ROTARY_V1
 #undef USE_SONOFF_RF
 #undef USE_RF_FLASH
@@ -151,6 +152,5 @@ Examples :
 #undef USE_DS18x20                              // Add support for DS18x20 sensors with id sort, single scan and read retry (+2k6 code)
 #undef USE_I2C                                  // I2C using library wire (+10k code, 0k2 mem, 124 iram)
 #undef USE_IR_REMOTE                            // Send IR remote commands using library IRremoteESP8266 and ArduinoJson (+4k3 code, 0k3 mem, 48 iram)
-
 
 #endif  // _USER_CONFIG_OVERRIDE_H_

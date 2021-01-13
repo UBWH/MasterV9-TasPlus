@@ -1252,7 +1252,17 @@ enum SupportedModules {
 
 const char kModuleNames[] PROGMEM =
   "Sonoff Basic|Sonoff RF|Sonoff SV|Sonoff TH|Sonoff Dual|Sonoff Pow|Sonoff 4CH|Sonoff S2X|Slampher|Sonoff Touch|"
-  "Sonoff LED|1 Channel|4 Channel|Motor C/AC|ElectroDragon|EXS Relay(s)|WiOn|Generic|Sonoff Dev|H801|"
+  "Sonoff LED|1 Channel|4 Channel|Motor C/AC|ElectroDragon|EXS Relay(s)|WiOn|"
+  #ifdef PRODUCT_NAME
+  PRODUCT_NAME
+  //defined(SP_STRIP_AU)
+  //"Arlec PB88UHA"
+  //#elif defined(SP_PLUG_AU)
+  //"Kogan KASPEMHA"
+  #else
+  "Generic"
+  #endif
+  "|Sonoff Dev|H801|"
   "Sonoff SC|Sonoff BN-SZ|Sonoff 4CH Pro|Huafan SS|Sonoff Bridge|Sonoff B1|AiLight|Sonoff T1 1CH|Sonoff T1 2CH|Sonoff T1 3CH|"
   "Supla Espablo|Witty Cloud|Yunshan Relay|MagicHome|Luani HVIO|KMC 70011|Arilux LC01|Arilux LC11|Sonoff Dual R2|Arilux LC06|"
   "Sonoff S31|Zengge WF017|Sonoff Pow R2|Sonoff iFan02|BlitzWolf SHP|Shelly 1|Shelly 2|Xiaomi Philips|Neo Coolcam|ESP Switch|"
@@ -2529,6 +2539,73 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
 \*********************************************************************************************/
 
 const mytmplt8285 kModules8285[TMP_MAXMODULE_8266 - TMP_WEMOS] PROGMEM = {
+#if defined(SP_STRIP)
+//{"NAME":"Arlec PB88UHA","GPIO":[0,56,0,17,22,21,0,0,24,23,0,0,0],"FLAG":15,"BASE":18}
+  {                            // 
+    GPI8_NONE,          // GPIO00 
+    GPI8_LED1_INV,      // GPIO01 
+    GPI8_NONE,          // GPIO02 
+    GPI8_KEY1,          // GPIO03 
+    GPI8_REL2,          // GPIO04 
+    GPI8_REL1,          // GPIO05 
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+    GPI8_NONE,          // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+    GPI8_NONE,          // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+                               // GPIO11 (SD_CMD   Flash)
+    GPI8_REL4,          // GPIO12 
+    GPI8_REL3,          // GPIO13 
+    GPI8_NONE,          // GPIO14 
+    GPI8_NONE,          // GPIO15 
+    GPI8_NONE,          // GPIO16 
+    GPI8_USER           // ADC0 A0 Analog input
+  }
+#elif defined(SS_4CHPRO)
+//{"NAME":"Sonoff 4CHPROR3","GPIO":[17,255,255,255,23,22,18,19,21,56,20,24,0],"FLAG":0,"BASE":23}
+  {                            // 
+    GPI8_KEY1,          // GPIO00 
+    GPI8_USER,          // GPIO01 
+    GPI8_USER,          // GPIO02 
+    GPI8_USER,          // GPIO03 
+    GPI8_REL3,        	// GPIO04 
+    GPI8_REL2,   	    // GPIO05 
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+    GPI8_KEY2,          // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+    GPI8_KEY3,          // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+						// GPIO11 (SD_CMD   Flash)
+    GPI8_REL1,   		// GPIO12 
+    GPI8_LED1_INV,      // GPIO13 
+    GPI8_KEY4,          // GPIO14 
+    GPI8_REL4,          // GPIO15 
+    GPI8_NONE,          // GPIO16 
+    0		           // ADC0 A0 Analog input
+  }
+#elif defined(SP_PLUG)
+//{"NAME":"Kogan Smart Sw","GPIO":[17,0,0,0,133,132,0,0,131,56,21,0,0],"FLAG":0,"BASE":18}
+  {                            // 
+    GPI8_KEY1,          // GPIO00 
+    GPI8_NONE,          // GPIO01 
+    GPI8_NONE,          // GPIO02 
+    GPI8_NONE,          // GPIO03 
+    GPI8_HLW_CF,        // GPIO04 
+    GPI8_NRG_CF1,       // GPIO05 
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+    GPI8_NONE,          // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+    GPI8_NONE,          // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+                               // GPIO11 (SD_CMD   Flash)
+    GPI8_NRG_SEL_INV,   // GPIO12 
+    GPI8_LED1_INV,      // GPIO13 
+    GPI8_REL1,          // GPIO14 
+    GPI8_NONE,          // GPIO15 
+    GPI8_NONE,          // GPIO16 
+    0		           // ADC0 A0 Analog input
+  }					 
+#else	 
   {                     // WEMOS - Any ESP8266/ESP8285 device like WeMos and NodeMCU hardware (ESP8266)
     GPI8_USER,          // GPIO00 D3 Wemos Button Shield
     GPI8_USER,          // GPIO01 TX Serial RXD
@@ -2548,7 +2625,10 @@ const mytmplt8285 kModules8285[TMP_MAXMODULE_8266 - TMP_WEMOS] PROGMEM = {
     GPI8_USER,          // GPIO15 D8
     GPI8_USER,          // GPIO16 D0 Wemos Wake
     GPI8_USER           // ADC0 A0 Analog input
-  },
+  }  
+#endif
+
+,		 
   {                     // SONOFF_4CH - Sonoff 4CH (ESP8285)
     GPI8_KEY1,          // GPIO00 Button 1
     GPI8_USER,          // GPIO01 Serial RXD and Optional sensor
