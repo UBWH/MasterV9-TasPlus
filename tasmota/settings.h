@@ -22,6 +22,17 @@
 
 const uint8_t PARAM8_SIZE = 18;            // Number of param bytes (SetOption)
 
+typedef union {                            // Watchdog
+  uint16_t data;                           
+  struct {                  
+    uint16_t num_pings      : 4;           // Number of pings before fail (2->17)
+    uint16_t cycle_secs     : 4;           // OFF->ON secs (1->16)
+    uint16_t interval_index : 3;           // 0=512 sec,  ... 7=4 sec
+    uint16_t enabled        : 1;           // This watchdog enabled
+    uint16_t socket         : 2;           // Sockets 0->3
+    uint16_t free1          : 2;           // unused
+  };
+} watchdog_t;													  
 typedef union {                            // Restricted by MISRA-C Rule 18.4 but so useful...
   uint32_t data;                           // Allow bit manipulation using SetOption
   struct {                                 // SetOption0 .. SetOption31
@@ -641,9 +652,13 @@ struct {
   uint8_t       shd_leading_edge;          // F5B
   uint16_t      shd_warmup_brightness;     // F5C
   uint8_t       shd_warmup_time;           // F5E
+  uint8_t       free_f5e;          		   // F5F
 
-  uint8_t       free_f5e[72];              // F5E - Decrement if adding new Setting variables just above and below
-
+  //uint8_t       free_f60[72];              // F60 - Decrement if adding new Setting variables just above and below
+  uint8_t       free_f60[44];              // F60 - Decrement if adding new Setting variables just above and below
+  uint32_t      wan_ip_address; 		       // If not zero, block WAN requests except from this IPV4 address	(4 bytes total)								
+  watchdog_t    Watchdog[MAX_WATCHDOGS];   // Ping Watchdogs (16 bits / 2 bytes each = 8 bytes total)					 
+  uint32_t      ping_address[MAX_WATCHDOGS];//IPV4 addresses (4 x 4 = 16 bytes)
   // Only 32 bit boundary variables below
 
   uint64_t      rf_protocol_mask;          // FA8
