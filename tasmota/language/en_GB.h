@@ -307,6 +307,12 @@
 #define D_SYSLOG_PORT "Syslog port"
 #define D_TELEMETRY_PERIOD "Telemetry period"
 
+#define D_CP_WAN_IP "Permitted WAN IPV4 Address"
+#define D_PH_WAN_IP "e.g. 123.456.78.90"
+#define D_HE_WAN_IP "0.0.0.0: Permit all WAN addresses"
+#define D_HELP         "Help"
+#define D_WATCHDOG    "Configure Watchdog"
+
 #define D_OTHER_PARAMETERS "Other parameters"
 #define D_TEMPLATE "Template"
 #define D_ACTIVATE "Activate"

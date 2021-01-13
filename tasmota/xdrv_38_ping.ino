@@ -59,6 +59,9 @@ extern "C" {
     bool        done;               // indicates the ping campaign is finished
     bool        fast;               // fast mode, i.e. stop pings when first successful response
     String      hostname;           // original hostname before convertion to IP address
+  #ifdef MAX_WATCHDOGS
+    uint8_t    watchdog;           //0 = no watchdog assigned 1=>MAX_WATCHDOGS = Watchdog number
+  #endif
   } Ping_t;
 
   // globals
@@ -243,7 +246,7 @@ extern "C" {
   //  0: OK
   // -1: ping already ongoing for this address
   // -2: unable to resolve address
-  int32_t t_ping_start(const char *hostname, uint32_t count) {
+  int32_t t_ping_start(const char *hostname, uint32_t count, uint8_t iWatchdog = 0) {
     IPAddress ipfull;
     if (!WiFi.hostByName(hostname, ipfull)) {
       return -2;
@@ -266,6 +269,7 @@ extern "C" {
     ping->ip = ip;
     ping->to_send_count = count - 1;
     ping->hostname = hostname;
+	ping->watchdog = iWatchdog;
 
     // add to Linked List from head
     ping->next = ping_head;
@@ -292,8 +296,12 @@ void PingResponsePoll(void) {
     if (ping->done) {
       uint32_t success = ping->success_count;
       uint32_t ip = ping->ip;
-
+	if(ping->watchdog){
+     WatchdogPingResponse(ping->watchdog-1,success);
+	} 
+	if(!ping->watchdog || !success) {
       Response_P(PSTR("{\"" D_JSON_PING "\":{\"%s\":{"
+					  "\"Watchdog\":%u,"
                       "\"Reachable\":%s"
                       ",\"IP\":\"%d.%d.%d.%d\""
                       ",\"Success\":%d"
@@ -303,6 +311,7 @@ void PingResponsePoll(void) {
                       ",\"AvgTime\":%d"
                       "}}}"),
                       ping->hostname.c_str(),
+					  ping->watchdog,
                       success ? "true" : "false",
                       ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, ip >> 24,
                       success,
@@ -312,7 +321,7 @@ void PingResponsePoll(void) {
                       success ? ping->sum_time / success : 0
                       );
       MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, PSTR(D_JSON_PING));
-
+    }
       // remove from linked list
       *prev_link = ping->next;
       // don't increment prev_link
@@ -329,6 +338,15 @@ void PingResponsePoll(void) {
 /*********************************************************************************************\
  * Ping Command
 \*********************************************************************************************/
+#ifdef MAX_WATCHDOGS
+int32_t WatchdogPing(uint8_t iWatchdog, uint32_t PingAddress){
+  uint32_t count = 1;
+  IPAddress ipPingAddress = PingAddress;
+//  int32_t res = 
+  return t_ping_start(ipPingAddress.toString().c_str(), count, iWatchdog);
+
+}
+#endif
 
 void CmndPing(void) {
   uint32_t count = XdrvMailbox.index;
