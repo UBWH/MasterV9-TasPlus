@@ -99,9 +99,12 @@ const char WIFI_HOSTNAME[] = "%s-%04d";     // Expands to <MQTT_TOPIC>-<last 4 d
 const uint8_t CONFIG_FILE_SIGN = 0xA5;      // Configuration file signature
 const uint8_t CONFIG_FILE_XOR = 0x5A;       // Configuration file xor (0 = No Xor)
 
-const uint32_t HLW_PREF_PULSE = 12530;      // was 4975us = 201Hz = 1000W
-const uint32_t HLW_UREF_PULSE = 1950;       // was 1666us = 600Hz = 220V
-const uint32_t HLW_IREF_PULSE = 3500;       // was 1666us = 600Hz = 4.545A
+const uint32_t HLW_PREF_PULSE = 9049;       // Kogan KASPEMHA 
+const uint32_t HLW_UREF_PULSE = 1602;       // was 1666us = 600Hz = 220V
+const uint32_t HLW_IREF_PULSE = 3163;       // was 1666us = 600Hz = 4.545A
+//const uint32_t HLW_PREF_PULSE = 12530;      // was 4975us = 201Hz = 1000W
+//const uint32_t HLW_UREF_PULSE = 1950;       // was 1666us = 600Hz = 220V
+//const uint32_t HLW_IREF_PULSE = 3500;       // was 1666us = 600Hz = 4.545A
 
 const uint8_t MQTT_RETRY_SECS = 10;         // Minimum seconds to retry MQTT connection
 const uint32_t GLOBAL_VALUES_VALID = 300;   // Max number of seconds to keep last received values
