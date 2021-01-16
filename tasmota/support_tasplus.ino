@@ -3,7 +3,6 @@ support_tasplus.ino
 
 Support for issuing HTML tags
 ************************************************/
-
 enum tagmode_t{TM_START,TM_END,TM_STARTEND}; 
 enum tag_t{TAG_DIV,TAG_TABLE,TAG_TR,TAG_TD,TAG_TH,TAG_SCRIPT,TAG_LEGEND,TAG_BR,TAG_FIELDSET,TAG_LABEL,TAG_SELECT}; 
 
@@ -103,4 +102,5 @@ Copied from xsns_53_sml.ino as Lat Long edits need this (Float causes rounding e
   }
   return result;
 }//CharToDouble
+
 

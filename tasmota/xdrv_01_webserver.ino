@@ -286,6 +286,24 @@ const char HTTP_SCRIPT_ROOT_PART2[] PROGMEM =
   "wl(la);";
 #endif //USE_UNISHOX_COMPRESSION
 
+
+#define ID_RSSI  "iRS"
+const char HTTP_SCRIPT_RSSI[] PROGMEM =
+	"var mst;"
+	"function ms(p){"
+		"y=new XMLHttpRequest();"
+		"y.onreadystatechange=function(){"
+			"if(y.readyState==4&&y.status==200){"
+				"eb('" ID_RSSI "').className='WS'+y.responseText;"
+				"}"
+			"};"
+			"y.open('GET','.?ms=1',true);"       
+			"y.send();"
+			"mst=setTimeout(ms,2345)"
+		"}"
+		"wl(ms);"
+;
+
 const char HTTP_SCRIPT_WIFI[] PROGMEM =
   "function c(l){"
     "eb('s1').value=l.innerText||l.textContent;"
@@ -664,10 +682,43 @@ const char HTTP_HEAD_STYLE3[] PROGMEM =
 #ifdef LANGUAGE_MODULE_NAME
   "<h3>" D_MODULE " %s</h3>"
 #else
-  "<h3>%s " D_MODULE "</h3>"
+  "<h3 id='pageHead'>%s " 
+//  D_MODULE 
+  "<span id='" ID_RSSI "'style='height:1em;float:right;transform:scale(0.5) translate(4em,-1em);' class='WS0'>"
+   "<div class='wv4 wave'>"
+     "<div class='wv3 wave'>"
+       "<div class='wv2 wave'>"
+         "<div class='wv1 wave'></div>"
+       "</div>"
+     "</div>"
+   "</div>"
+  "</span>"
+  "</h3>"
 #endif
   "<h2>%s</h2>";
 
+const char HTTP_STYLE_WAVE[] PROGMEM = 
+".wave {"
+ "display:inline-block;"
+ "border:.3em solid transparent;"
+ "border-top-color:#1aca13;"
+ "border-radius:50%%;"
+ "border-style:solid;"
+"margin:.15em;"
+"}"
+".WS3 .wv4.wave,"
+".WS2 .wv4.wave,"
+".WS2 .wv3.wave,"
+".WS1 .wv4.wave,"
+".WS1 .wv3.wave,"
+".WS1 .wv2.wave," 
+".WS0 .wv4.wave,"
+".WS0 .wv3.wave,"
+".WS0 .wv2.wave,"
+".WS0 .wv1.wave"
+"{border-top-color:#ccc;}"
+"#pageHead{text-align:left;}"
+;
 const char HTTP_MSG_SLIDER_GRADIENT[] PROGMEM =
   "<div id='%s' class='r' style='background-image:linear-gradient(to right,%s,%s);'>"
   "<input id='sl%d' type='range' min='%d' max='%d' value='%d' onchange='lc(\"%c\",%d,value)'>"
@@ -720,7 +771,40 @@ const char HTTP_FORM_LOG2[] PROGMEM =
   "<p><b>" D_SYSLOG_HOST "</b> (" SYS_LOG_HOST ")<br><input id='lh' placeholder=\"" SYS_LOG_HOST "\" value=\"%s\"></p>"
   "<p><b>" D_SYSLOG_PORT "</b> (" STR(SYS_LOG_PORT) ")<br><input id='lp' placeholder='" STR(SYS_LOG_PORT) "' value='%d'></p>"
   "<p><b>" D_TELEMETRY_PERIOD "</b> (" STR(TELE_PERIOD) ")<br><input id='lt' placeholder='" STR(TELE_PERIOD) "' value='%d'></p>";
+  
+  
+//CLOCK_PARAMS
+const char HTTP_FORM_CLOCK0[] PROGMEM =
+ "<label for='ud'>Use Daylight Savings?</label>"
+ "<input type='checkbox' id='ud' onclick='cd()' value='99' %s>"
+ "<br>"
+ ;
+ 
+const char HTTP_FORM_CLOCK1[] PROGMEM =
+  "<b>%s (degrees, %s)</b><br><input type='number' step='0.000001' placeholder='decimal %s to %s degrees' min='%s' max='%s' id='%s' value='%s'>"
+  ;
 
+const char HTTP_FORM_CLOCK3[] PROGMEM =
+  "<option value='%u' %s>%s</option>"
+  ;  
+
+const char HTTP_FORM_CLOCK4[] PROGMEM =
+ "<td><input title='0 to 23' id='%s' type='number' min='0' max='23' value='%d'>"
+ ;
+ 
+const char HTTP_FORM_CLOCK5[] PROGMEM =
+ "<td><input title='e.g. for GMT+8hrs, enter 480' id='%s' type='number' min='-780' max='780' value='%d'>"
+ ;
+  
+const char HTTP_FORM_OTHER_1[] PROGMEM =
+  "<p><input id='t1' placeholder='" D_TEMPLATE "' value='%s'></p>";
+
+const char HTTP_FORM_OTHER_2[] PROGMEM =
+  "<p><label><input id='t2' type='checkbox'%s><b>" D_ACTIVATE "</b></label></p>";  
+
+const char HTTP_FORM_OTHER_3[] PROGMEM =
+  "<label><input id='b1' type='checkbox'%s><b>" D_MQTT_ENABLE "</b></label><br>"
+  "<br>";
 const char HTTP_FORM_OTHER[] PROGMEM =
   "<fieldset><legend><b>&nbsp;" D_OTHER_PARAMETERS "&nbsp;</b></legend>"
   "<form method='get' action='co'>"
@@ -775,7 +859,9 @@ const char HTTP_COUNTER[] PROGMEM =
   "<br><div id='t' style='text-align:center;'></div>";
 
 const char HTTP_END[] PROGMEM =
-  "<div style='text-align:right;font-size:11px;'><hr/><a href='https://bit.ly/tasmota' target='_blank' style='color:#aaa;'>Tasmota %s " D_BY " Theo Arends</a></div>"
+  "<div style='text-align:right;font-size:11px;'><hr/>"
+  "<a href='https://ubwh.github.io/' target='_blank' style='color:#aaa;'>" FRIENDLY_NAME "</a> inside"
+  "</div>"
   "</div>"
   "</body>"
   "</html>";
@@ -786,15 +872,17 @@ const char HTTP_DEVICE_STATE[] PROGMEM = "<td style='width:%d{c}%s;font-size:%dp
 enum ButtonTitle {
   BUTTON_RESTART, BUTTON_RESET_CONFIGURATION,
   BUTTON_MAIN, BUTTON_CONFIGURATION, BUTTON_INFORMATION, BUTTON_FIRMWARE_UPGRADE, BUTTON_CONSOLE,
-  BUTTON_MODULE, BUTTON_WIFI, BUTTON_LOGGING, BUTTON_OTHER, BUTTON_TEMPLATE, BUTTON_BACKUP, BUTTON_RESTORE };
+  BUTTON_MODULE, BUTTON_WIFI, BUTTON_LOGGING, BUTTON_OTHER, BUTTON_CLOCK, BUTTON_TEMPLATE, BUTTON_BACKUP, BUTTON_RESTORE };
 const char kButtonTitle[] PROGMEM =
   D_RESTART "|" D_RESET_CONFIGURATION "|"
   D_MAIN_MENU "|" D_CONFIGURATION "|" D_INFORMATION "|" D_FIRMWARE_UPGRADE "|" D_CONSOLE "|"
-  D_CONFIGURE_MODULE "|" D_CONFIGURE_WIFI"|" D_CONFIGURE_LOGGING "|" D_CONFIGURE_OTHER "|" D_CONFIGURE_TEMPLATE "|" D_BACKUP_CONFIGURATION "|" D_RESTORE_CONFIGURATION;
+  D_CONFIGURE_MODULE "|" D_CONFIGURE_WIFI"|" D_CONFIGURE_LOGGING "|" D_CONFIGURE_OTHER "|"
+  D_CONFIGURE_CLOCK "|"
+  D_CONFIGURE_TEMPLATE "|" D_BACKUP_CONFIGURATION "|" D_RESTORE_CONFIGURATION;
 const char kButtonAction[] PROGMEM =
   ".|rt|"
   ".|cn|in|up|cs|"
-  "md|wi|lg|co|tp|dl|rs";
+  "md|wi|lg|co|ck|tp|dl|rs";
 const char kButtonConfirm[] PROGMEM = D_CONFIRM_RESTART "|" D_CONFIRM_RESET_CONFIGURATION;
 
 enum CTypes { CT_HTML, CT_PLAIN, CT_XML, CT_JSON, CT_STREAM };
@@ -870,6 +958,7 @@ const WebServerDispatch_t WebServerDispatch[] PROGMEM = {
   { "cs", HTTP_OPTIONS, HandlePreflightRequest },
   { "cm", HTTP_ANY, HandleHttpCommand },
 #ifndef FIRMWARE_MINIMAL
+  { "ck", HTTP_ANY, HandleClockParams},
   { "cn", HTTP_ANY, HandleConfiguration },
   { "md", HTTP_ANY, HandleModuleConfiguration },
   { "wi", HTTP_ANY, HandleWifiConfiguration },
@@ -985,7 +1074,6 @@ void PollDnsWebserver(void)
   if (Webserver) { Webserver->handleClient(); }
 }
 
-/*********************************************************************************************/
 
 bool WebAuthenticate(void)
 {
@@ -998,6 +1086,16 @@ bool WebAuthenticate(void)
 
 bool HttpCheckPriviledgedAccess(bool autorequestauth = true)
 {
+  //WAN Source Check
+  uint32_t ipSRC; 																 
+  ParseIp(&ipSRC, (const char*)Webserver->client().remoteIP().toString().c_str());//95 90 57 32
+  uint32_t subnetSRC = Settings.ip_address[2] & ipSRC;							              //00 90 57 32
+  uint32_t subnetLAN = Settings.ip_address[2] & (uint32_t)WiFi.localIP();		      //00 01 01 0A
+  if( (Settings.wan_ip_address != 0) && (subnetSRC != subnetLAN ) && (ipSRC != Settings.wan_ip_address)){
+	  //Block access
+	  AddLog_P(LOG_LEVEL_NONE, PSTR(D_LOG_HTTP "Denying access to HTTP request from %s"),Webserver->client().remoteIP().toString().c_str());
+	  return false;
+  }
   if (HTTP_USER == Web.state) {
     HandleRoot();
     return false;
@@ -1023,6 +1121,7 @@ void WSHeaderSend(void)
   Webserver->sendHeader(F("Expires"), F("-1"));
   HttpHeaderCors();
 }
+
 
 /**********************************************************************************************
 * HTTP Content Page handler
@@ -1155,6 +1254,11 @@ void WSContentStart_P(const char* title)
   WSContentStart_P(title, true);
 }
 
+void WSContentSendStyle(uint8_t isRootPage = false)
+{
+  WSContentSendStyle_P(isRootPage?HTTP_STYLE_WAVE:nullptr);
+}
+
 void WSContentSendStyle_P(const char* formatP, ...)
 {
   if (WifiIsInManagerMode()) {
@@ -1188,6 +1292,7 @@ void WSContentSendStyle_P(const char* formatP, ...)
 
     _WSContentSendBuffer();
   }
+  //HEAD_STYLE_3 closes the </head> and starts <body>
   WSContentSend_P(HTTP_HEAD_STYLE3, WebColor(COL_TEXT),
 #ifdef FIRMWARE_MINIMAL
     WebColor(COL_TEXT_WARNING),
@@ -1207,10 +1312,7 @@ void WSContentSendStyle_P(const char* formatP, ...)
   WSContentSend_P(PSTR("</div>"));
 }
 
-void WSContentSendStyle(void)
-{
-  WSContentSendStyle_P(nullptr);
-}
+
 
 void WSContentButton(uint32_t title_index)
 {
@@ -1262,7 +1364,7 @@ void WSContentStop(void)
       WSContentSend_P(HTTP_COUNTER);
     }
   }
-  WSContentSend_P(HTTP_END, TasmotaGlobal.version);
+  WSContentSend_P(HTTP_END);
   WSContentEnd();
 }
 
@@ -1371,8 +1473,9 @@ void HandleRoot(void)
 #endif
   WSContentSend_P(HTTP_SCRIPT_ROOT_PART2);
 
-  WSContentSendStyle();
+  WSContentSend_P(HTTP_SCRIPT_RSSI);
 
+  WSContentSendStyle(true);   //isRootPage = true
   WSContentSend_P(PSTR("<div id='l1' name='l1'></div>"));
   if (TasmotaGlobal.devices_present) {
 #ifdef USE_LIGHT
@@ -1550,6 +1653,28 @@ bool HandleRootStatusRefresh(void)
     return true;
   }
 
+  //RSSI refresh
+  if(Webserver->hasArg("ms")){
+    int32_t rssi = -100;
+    uint8_t signalLevel=1;
+
+    WSContentBegin(200, CT_HTML);
+    if (Settings.flag4.network_wifi) {
+      rssi = WiFi.RSSI();
+    } 
+    uint8_t rssiQ = WifiGetRssiAsQuality(rssi);
+    if     (rssiQ>80) signalLevel=4;
+    else if(rssiQ>60) signalLevel=3;
+    else if(rssiQ>40) signalLevel=2;
+    else if(rssiQ>20) signalLevel=1;
+    else              signalLevel=0;
+    
+    WSContentSend_P(PSTR("%d"),signalLevel);
+	  WSContentEnd();
+	  return true;
+  }
+ 
+  //Normal Refresh 
   if (!Webserver->hasArg("m")) {     // Status refresh requested
     return false;
   }
@@ -1677,8 +1802,7 @@ bool HandleRootStatusRefresh(void)
   WSContentSend_P(PSTR("{t}"));
   XsnsCall(FUNC_WEB_SENSOR);
   XdrvCall(FUNC_WEB_SENSOR);
-
-  WSContentSend_P(PSTR("</table>"));
+  htmlTag(TM_END,TAG_TABLE);
 
   if (TasmotaGlobal.devices_present) {
     WSContentSend_P(PSTR("{t}<tr>"));
@@ -1749,6 +1873,7 @@ void HandleConfiguration(void)
   XdrvCall(FUNC_WEB_ADD_BUTTON);
   XsnsCall(FUNC_WEB_ADD_BUTTON);
 
+  WSContentButton(BUTTON_CLOCK);
   WSContentButton(BUTTON_LOGGING);
   WSContentButton(BUTTON_OTHER);
   WSContentButton(BUTTON_TEMPLATE);
@@ -2086,6 +2211,7 @@ void HandleWifiConfiguration(void)
   WSContentSend_P(HTTP_SCRIPT_WIFI);
   WSContentSendStyle();
 
+  htmlPageHeader(PSTR(D_CONFIGURE_WIFI));	
   if (HTTP_MANAGER_RESET_ONLY != Web.state) {
     if (Webserver->hasArg("scan")) {
 #ifdef USE_EMULATION
@@ -2149,11 +2275,84 @@ void HandleWifiConfiguration(void)
         WSContentSend_P(PSTR("<br>"));
       }
     } else {
-      WSContentSend_P(PSTR("<div><a href='/wi?scan='>" D_SCAN_FOR_WIFI_NETWORKS "</a></div><br>"));
+      //WSContentSend_P(PSTR("<div><a href='/wi?scan='>" D_SCAN_FOR_WIFI_NETWORKS "</a></div><br>"));
+	  WSContentSend_P(PSTR("<a href='?scan='><button class='button bgrn' type='button'>" D_SCAN_FOR_WIFI_NETWORKS "</button></a><div></div><p></p>"));
     }
 
     // As WIFI_HOSTNAME may contain %s-%04d it cannot be part of HTTP_FORM_WIFI where it will exception
-    WSContentSend_P(HTTP_FORM_WIFI, SettingsText(SET_STASSID1), SettingsText(SET_STASSID2), WIFI_HOSTNAME, WIFI_HOSTNAME, SettingsText(SET_HOSTNAME), SettingsText(SET_CORS));
+    //WSContentSend_P(HTTP_FORM_WIFI, SettingsText(SET_STASSID1), SettingsText(SET_STASSID2), WIFI_HOSTNAME, WIFI_HOSTNAME, SettingsText(SET_HOSTNAME), SettingsText(SET_CORS));
+ 
+   	htmlTag(TM_START,TAG_FIELDSET); 
+    htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,PSTR("text-align:left;"),PSTR("<b>&nbsp;" D_WIFI_PARAMETERS "&nbsp;</b>")); 
+    WSContentSend_P(PSTR("<form method='post' action=''>"));
+
+	 htmlTag(TM_START,TAG_FIELDSET);
+	 htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,PSTR("text-align:left;"),PSTR("<b>&nbsp;Network 1&nbsp;</b>"));
+	 WSContentSend_P(PSTR(
+	  "<label><b>Name (SSID)</label> "
+ 	  ));
+ 	 
+	htmlTag(TM_START,TAG_BR);
+
+	 WSContentSend_P(PSTR(  
+ 	  "<input id='s1' placeholder='" STA_SSID1 "' value='%s'>"
+	  ),SettingsText(SET_STASSID1));
+		
+ 	htmlTag(TM_STARTEND,TAG_DIV); 	 
+
+	WSContentSend_P(PSTR( 
+	  "<label><b>Password</b></label>"
+	  "<span style='float:right'>"
+	  "<input type='checkbox' onclick='sp(\"p1\")'>Show password"
+	  "</span>"
+	  ));
+	
+	htmlTag(TM_START,TAG_BR);
+	
+	WSContentSend_P(PSTR(
+   	  "<input id='p1' type='password' value='%s'>"
+	  ),SettingsText(SET_STAPWD1));
+
+	htmlTag(TM_END,TAG_FIELDSET);
+
+	htmlTag(TM_START,TAG_BR);
+	  
+	htmlTag(TM_START,TAG_FIELDSET);
+	 htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,PSTR("text-align:left;"),PSTR("<b>&nbsp;Network 2 (Optional)&nbsp;</b>"));
+ 	 WSContentSend_P(PSTR(
+	  "<label><b>Name (SSID)</b></label>"
+	  ));
+	
+	htmlTag(TM_START,TAG_BR);
+
+	WSContentSend_P(PSTR(
+	  "<input id='s2' placeholder='" STA_SSID2 "' value='%s'>"
+	 ),SettingsText(SET_STASSID2));
+
+ 	 htmlTag(TM_STARTEND,TAG_DIV); 	 
+	 
+	 WSContentSend_P(PSTR(
+		"<label><b>Password</b></label>"
+		"<span style='float:right'>"
+		"<input type='checkbox' onclick='sp(\"p2\")'>Show password"
+		"</span>"
+	 ));
+
+ 	 htmlTag(TM_START,TAG_BR);
+
+	 WSContentSend_P(PSTR(
+	   "<input id='p2' type='password' value='%s'>"
+		),SettingsText(SET_STAPWD2));
+     
+	 htmlTag(TM_END,TAG_FIELDSET);
+	
+	WSContentSend_P(PSTR(
+		"<p><b>" D_HOSTNAME "</b> (%s)<br><input id='h' placeholder='%s' value='%s'></p>")
+		,WIFI_HOSTNAME, WIFI_HOSTNAME, SettingsText(SET_HOSTNAME));
+	
+	WSContentSend_P(PSTR(	
+        "<p><b>" D_CORS_DOMAIN "</b><input id='c' placeholder='" CORS_DOMAIN "' value='%s'></p>")
+		,SettingsText(SET_CORS));   
     WSContentSend_P(HTTP_FORM_END);
   }
 
@@ -2256,6 +2455,266 @@ void LoggingSaveSettings(void)
   AddLog_P(LOG_LEVEL_INFO, PSTR(D_LOG_LOG D_CMND_SERIALLOG " %d, " D_CMND_WEBLOG " %d, " D_CMND_MQTTLOG " %d, " D_CMND_SYSLOG " %d, " D_CMND_LOGHOST " %s, " D_CMND_LOGPORT " %d, " D_CMND_TELEPERIOD " %d"),
     Settings.seriallog_level, Settings.weblog_level, Settings.mqttlog_level, Settings.syslog_level, SettingsText(SET_SYSLOG_HOST), Settings.syslog_port, Settings.tele_period);
 }
+/*********************************************************************************************/
+void HTML_ShowLocalTime(bool showClockButton=true){
+  char DT[TOPSZ];
+  strlcpy(DT,GetDateAndTime(DT_LOCAL).c_str(),sizeof(DT));
+  
+  for(uint32_t i=0;i<strlen(DT);i++){
+   if(DT[i]=='T'){DT[i]=' ';break;}
+  }
+  
+  htmlTag(TM_START,TAG_FIELDSET);  
+  htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;Local Date & Time (refresh page to update)&nbsp;</b>")); 
+  
+  
+//  WSContentSend_P(PSTR("<fieldset><legend><b>&nbsp;Local Date & Time (refresh page to update)&nbsp;</b></legend>"));
+  WSContentSend_P(DT);
+  if(showClockButton) {
+    WSContentSend_P(PSTR(
+	  "<a href='ck'>"
+	    "<button style='width:50%%;float:right' class='button'>&#9881; " D_CONFIGURE_CLOCK "</button>"
+	  "</a>")
+	  );
+  }
+  htmlTag(TM_START,TAG_BR);
+  WSContentSend_P(PSTR(D_SUNRISE ": %s<br>" D_SUNSET ":&nbsp;&nbsp;%s"),GetSun(0).c_str(),GetSun(1).c_str());
+  
+  htmlTag(TM_END,TAG_FIELDSET);//WSContentSend_P(PSTR("</fieldset>"));
+  htmlTag(TM_START,TAG_BR); //WSContentSend_P(PSTR("<br>"));
+}//HTML_ShowLocalTime
+
+void HandleClockParams(void){
+  char parameter[FLOATSZ];
+
+  if (!HttpCheckPriviledgedAccess()) { return; }
+
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP), PSTR(D_CONFIGURE_CLOCK));
+
+  if (Webserver->hasArg("save")) {
+    ClockSaveSettings();
+    WebRestart(1);
+    return;
+  }
+
+  WSContentStart_P(PSTR(D_CONFIGURE_CLOCK));
+  WSContentSendStyle();
+  htmlPageHeader(PSTR(D_CONFIGURE_CLOCK));
+  
+  //Localtime 
+  HTML_ShowLocalTime(false);
+
+  WSContentSend_P(PSTR(
+   "<script>"
+   "function cd(){eb('uds').style.display = eb('ud').checked?'block':'none';eb('uds1').style.display = eb('ud').checked?'block':'none';}"
+   "window.onload = function(){cd()};"
+   "</script>"
+   ));
+  
+  htmlTag(TM_START,TAG_FIELDSET);
+   htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp" D_CONFIGURE_CLOCK "&nbsp;</b>")); 
+   WSContentSend_P(PSTR(" <form method='post' action=''>"));
+   
+
+  //Lat Long fieldset	
+  htmlTag(TM_START,TAG_FIELDSET);
+    htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;For Sunset/Sunrise calculations&nbsp;</b>"));   
+    dtostrfd(Settings.latitude/1000000.0d, 6, parameter); 
+    WSContentSend_P(HTTP_FORM_CLOCK1, "Latitude", "North+/South-","-90", "90", "-90", "+90", "la", parameter);
+  
+    WSContentSend_P(PSTR("<br>"));
+    dtostrfd(Settings.longitude/1000000.0d, 6, parameter);
+    WSContentSend_P(HTTP_FORM_CLOCK1, "Longitude","East+/West-","-180","180","-180","180","lo",parameter);
+  htmlTag(TM_END,TAG_FIELDSET);
+  
+  WSContentSend_P(PSTR("<br>"));
+  WSContentSend_P(HTTP_FORM_CLOCK0,Settings.timezone==99?" checked":"");	//Use Daylight Savings Checkbox
+  WSContentSend_P(PSTR("<br>"));
+  
+  //Timezone div
+  WSContentSend_P(PSTR("<div>"));
+ 
+  //STD
+  int iTZsh=Settings.toffset[0]/60;
+  int iTZsm=abs(Settings.toffset[0] - (iTZsh * SECS_PER_MIN));
+  //DST
+  int iTZdh=Settings.toffset[1]/60;
+  int iTZdm=abs(Settings.toffset[1] - (iTZdh * SECS_PER_MIN));
+
+  WSContentSend_P(PSTR(
+   "<fieldset>"
+   "<legend><b>&nbsp;Timezone offset from GMT&nbsp;</b></legend>"
+   "<p>Standard Time <input type='text' placeholder='-13:00 to +13:00' id='ts' value='%+03d:%02d'></p>"
+   "<p id='uds1' style='display:block'>Daylight Savings Time <input type='text' placeholder='-13:00 to +13:00' id='td' value='%+03d:%02d'></p>"
+   "</fieldset>"
+   "</div>"),
+		iTZsh, iTZsm,
+		iTZdh, iTZdm
+	);
+  
+  //Start Times div
+  WSContentSend_P(PSTR("<div id='uds' style='display:none'>"));
+  WSContentSend_P(PSTR(							
+   "<fieldset>"
+   "<legend><b>&nbsp;Daylight Savings&nbsp;</b></legend>"
+   "<table border='1' width='100%%'>"
+   "<tr><td style='text-align:center'>Starts<td style='text-align:center'>Ends</tr>"
+   ));
+
+  //Week
+  WSContentSend_P(PSTR("<tr>"));
+  const char *weeks[] = {"First", "Second", "Third", "Forth", "Last" }; 
+  for(int j=1;j>=0;j--){
+   WSContentSend_P(PSTR("<td><select id='w%u'>"),j); 		
+   for(int i=1;i<6;i++){
+    WSContentSend_P(HTTP_FORM_CLOCK3,i,Settings.tflag[j].week==i?"selected":"",weeks[i-1]); 		
+   }		
+   WSContentSend_P(PSTR("</select>"));
+  }
+  WSContentSend_P(PSTR("</tr>"));
+
+   
+  //Day of Week 
+  WSContentSend_P(PSTR("<tr>"));
+  const char *dow[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"}; 
+  for(int j=1;j>=0;j--){
+   WSContentSend_P(PSTR("<td><select id='d%u'>"),j); 
+   for(int i=1;i<8;i++){
+    WSContentSend_P(HTTP_FORM_CLOCK3,i,Settings.tflag[j].dow==i?"selected":"",dow[i-1]); 		
+   }		
+   WSContentSend_P(PSTR("</select>"));
+  }
+  WSContentSend_P(PSTR("</tr>"));
+
+  WSContentSend_P(PSTR("<tr><td style='text-align:center'>of</td><td style='text-align:center'>of</td></tr>"));
+
+  //Month
+  WSContentSend_P(PSTR("<tr>"));
+  const char *months[] = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}; 
+  for(int j=1;j>=0;j--){
+   WSContentSend_P(PSTR("<td><select id='m%u'>"),j); 		
+   for(int i=1;i<13;i++){
+    WSContentSend_P(HTTP_FORM_CLOCK3,i,Settings.tflag[j].month==i?"selected":"",months[i-1]); 		
+   }		
+   WSContentSend_P(PSTR("</select>"));
+  }
+  WSContentSend_P(PSTR("</tr>"));
+
+  WSContentSend_P(PSTR("<tr><td style='text-align:center'>at</td><td style='text-align:center'>at</td></tr>"));
+  
+  WSContentSend_P(PSTR("<tr>"));   
+  WSContentSend_P(HTTP_FORM_CLOCK4,"h1",Settings.tflag[1].hour);		//Hour <td>
+  WSContentSend_P(HTTP_FORM_CLOCK4,"h0",Settings.tflag[0].hour);	
+  WSContentSend_P(PSTR("</tr>"));
+
+  WSContentSend_P(PSTR("<tr><td style='text-align:center'>o\'clock</td><td style='text-align:center'>o\'clock</td></tr>"));
+
+  WSContentSend_P(PSTR("</table>"
+   "</fieldset>"
+   "</div>"
+   ));
+    
+  WSContentSend_P(HTTP_FORM_END);
+//  if(GetWizardDone())
+		WSContentSpaceButton(BUTTON_CONFIGURATION);
+  WSContentStop();
+}//HandleClockParam
+
+/*
+arg: the id of the form input. eg 'ts' or 'td'
+WebArg: eg "+8:00" or "-13:45"
+index: where to save the parsed time:  Settings.toffset[0] for STD
+									or Settings.toffset[1] for DST
+*/
+void charTime2toffset(const char* arg, int index){
+  char tmp[100];  
+  tmp[0]=0;
+  WebGetArg(arg, tmp, sizeof(tmp));
+  if(strlen(tmp)){
+	  int iTZh = atoi(tmp);  //this stops at the ':'
+    int iTZm = 0;
+	  if((iTZh > 13 ) || (iTZh < -13)) {
+	    iTZh=0;
+	  } else {
+	    char *p = strtok (tmp, ":");
+      if (p) {
+        p = strtok (nullptr, ":");
+        if (p) {
+          iTZm = strtol(p, nullptr, 10);
+          if (iTZm > 59)  iTZm = 59; 
+        }
+      }
+	}	  
+	if(iTZh < 0) iTZm *= -1;
+	Settings.toffset[index]=60*iTZh + iTZm;
+  }
+}//charTime2toffset
+
+void ClockSaveSettings(void){
+  char tmp[TOPSZ];  // Max length is currently 33
+  
+  //Lat
+  WebGetArg("la", tmp, sizeof(tmp));
+  if(strlen(tmp)) {
+   Settings.latitude  = (int)(round(CharToDouble(tmp) * 1000000.0d));
+   Settings.tflag[1].hemis = (Settings.latitude > 0 ? 0 : 1);
+   Settings.tflag[0].hemis = Settings.tflag[1].hemis;
+  }   
+  
+  //Long
+  WebGetArg("lo", tmp, sizeof(tmp));
+  if(strlen(tmp)) Settings.longitude = (int)(round(CharToDouble(tmp) * 1000000.0d));
+  
+  //STD time
+  charTime2toffset("ts",0);
+  
+  //Timezone
+  WebGetArg("ud", tmp, sizeof(tmp));
+  if(strlen(tmp)){
+    //Must be 99 DST checked
+    Settings.timezone = atoi(tmp);
+	  Settings.timezone_minutes = 0;
+	  charTime2toffset("td",1);
+  } else {
+    // DST Not Checked
+	  Settings.timezone         = (int)Settings.toffset[0]/60;
+	  Settings.timezone_minutes = abs(Settings.toffset[0] - (Settings.timezone * 60));
+  }
+
+  //STD&DST Start Times
+  if(Settings.timezone != 99) return; //No DST
+    
+  char webindex[5];    // WebGetArg name
+  
+  /// Month
+  for(int i=0;i<2;i++){
+   snprintf_P(webindex, sizeof(webindex), PSTR("m%d"), i);
+   WebGetArg(webindex, tmp, sizeof(tmp));
+   Settings.tflag[i].month = atoi(tmp);
+  }
+
+  /// Week
+  for(int i=0;i<2;i++){
+   snprintf_P(webindex, sizeof(webindex), PSTR("w%d"), i);
+   WebGetArg(webindex, tmp, sizeof(tmp));
+   Settings.tflag[i].week = atoi(tmp);
+  }
+  
+  /// Day of Week
+  for(int i=0;i<2;i++){
+   snprintf_P(webindex, sizeof(webindex), PSTR("d%d"), i);
+   WebGetArg(webindex, tmp, sizeof(tmp));
+   Settings.tflag[i].dow = atoi(tmp);
+  }
+  
+  ///Hour
+  for(int i=0;i<2;i++){
+   snprintf_P(webindex, sizeof(webindex), PSTR("h%d"), i);
+   WebGetArg(webindex, tmp, sizeof(tmp));
+   Settings.tflag[i].hour = atoi(tmp);
+  }
+}//ClockSaveSettings
+
 
 /*-------------------------------------------------------------------------------------------*/
 
@@ -2277,10 +2736,50 @@ void HandleOtherConfiguration(void)
   TemplateJson();
   char stemp[strlen(TasmotaGlobal.mqtt_data) +1];
   strlcpy(stemp, TasmotaGlobal.mqtt_data, sizeof(stemp));  // Get JSON template
+
+  htmlTag(TM_START,TAG_FIELDSET);  
+  htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;" D_OTHER_PARAMETERS "&nbsp;</b>")); 
+
+  WSContentSend_P(PSTR(
+   "<form method='post' action=''>"
+   "<p></p>"
+  ));
+
+  htmlTag(TM_START,TAG_FIELDSET);  
+  htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;Login credentials&nbsp;</b>")); 
+  WSContentSend_P(PSTR(
+   "<input type='text' disabled value='admin'>"
+   "<br>"
+   "<input id='wp' type='password' placeholder='" D_WEB_ADMIN_PASSWORD "' value='" D_ASTERISK_PWD "'>"
+   "<br>"
+   "<input type='checkbox' onclick='sp(\"wp\")'>Display password"
+   ));
+  htmlTag(TM_END,TAG_FIELDSET); 
+
+  WSContentSend_P("<p></p>"); 
+
+  htmlTag(TM_START,TAG_FIELDSET);  
+  htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;" D_TEMPLATE "&nbsp;</b>")); 
+  WSContentSend_P(HTTP_FORM_OTHER_1, stemp);  // Template
+  WSContentSend_P(HTTP_FORM_OTHER_2, (USER_MODULE == Settings.module) ? " checked disabled" : "");  // Activate Template
+  htmlTag(TM_END,TAG_FIELDSET);  
+
+  WSContentSend_P("<p></p>"); 
+  
+  htmlTag(TM_START,TAG_FIELDSET);  
+   htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;MQTT&nbsp;</b>")); 
+   WSContentSend_P(HTTP_FORM_OTHER_3, (Settings.flag.mqtt_enabled) ? " checked" : "");  // SetOption3 - Enable MQTT
+  htmlTag(TM_END,TAG_FIELDSET);  
+
+  WSContentSend_P("<p></p>");
+/*
   WSContentSend_P(HTTP_FORM_OTHER, stemp, (USER_MODULE == Settings.module) ? " checked disabled" : "",
     (Settings.flag.mqtt_enabled) ? " checked" : "",   // SetOption3 - Enable MQTT
     SettingsText(SET_FRIENDLYNAME1), SettingsText(SET_DEVICENAME));
-
+*/
+htmlTag(TM_START,TAG_FIELDSET);  
+   htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;" D_FRIENDLY_NAME "&nbsp;</b>")); 
+   
   uint32_t maxfn = (TasmotaGlobal.devices_present > MAX_FRIENDLYNAMES) ? MAX_FRIENDLYNAMES : (!TasmotaGlobal.devices_present) ? 1 : TasmotaGlobal.devices_present;
 #ifdef USE_SONOFF_IFAN
   if (IsModuleIfan()) { maxfn = 1; }
@@ -2294,6 +2793,7 @@ void HandleOtherConfiguration(void)
       (i) ? stemp : "",
       SettingsText(SET_FRIENDLYNAME1 + i));
   }
+htmlTag(TM_END,TAG_FIELDSET);
 
 #ifdef USE_EMULATION
 #if defined(USE_EMULATION_WEMO) || defined(USE_EMULATION_HUE)
@@ -2317,6 +2817,16 @@ void HandleOtherConfiguration(void)
 #endif  // USE_EMULATION_WEMO || USE_EMULATION_HUE
 #endif  // USE_EMULATION
 
+  WSContentSend_P("<p></p>");
+
+  htmlTag(TM_START,TAG_FIELDSET);  
+  htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp;" D_CP_WAN_IP "&nbsp;</b>")); 	  
+   WSContentSend_P(PSTR(
+     "<p><input id='wa' placeholder='" D_PH_WAN_IP "' value='%s'></p>"
+      D_HE_WAN_IP
+	 ),IPAddressToString(Settings.wan_ip_address));
+  htmlTag(TM_END,TAG_FIELDSET);  
+  
   WSContentSend_P(HTTP_FORM_END);
   WSContentSpaceButton(BUTTON_CONFIGURATION);
   WSContentStop();
@@ -2358,6 +2868,9 @@ void OtherSaveSettings(void)
     snprintf_P(message, sizeof(message), PSTR(D_CMND_BACKLOG " " D_CMND_TEMPLATE " %s%s"), tmp, (Webserver->hasArg("t2")) ? "; " D_CMND_MODULE " 0" : "");
     ExecuteWebCommand(message, SRC_WEBGUI);
   }
+  //WAN IP
+  WebGetArg("wa", tmp, sizeof(tmp));
+  ParseIp(&Settings.wan_ip_address, tmp);
 }
 
 /*-------------------------------------------------------------------------------------------*/

@@ -252,6 +252,7 @@
 #define D_DEVICE_WILL_RESTART "Device will restart in a few seconds"
 #define D_BUTTON_TOGGLE "Toggle"
 #define D_CONFIGURATION "Configuration"
+#define D_CONFIGURE_CLOCK "Configure Clock"
 #define D_INFORMATION "Information"
 #define D_FIRMWARE_UPGRADE "Firmware Upgrade"
 #define D_CONSOLE "Console"
@@ -277,8 +278,8 @@
 #define D_SERIAL_IN "Serial In"
 #define D_SERIAL_OUT "Serial Out"
 
-#define D_WIFI_PARAMETERS "Wifi parameters"
-#define D_SCAN_FOR_WIFI_NETWORKS "Scan for wifi networks"
+#define D_WIFI_PARAMETERS "WiFi parameters"
+#define D_SCAN_FOR_WIFI_NETWORKS "Scan for WiFi networks"
 #define D_SCAN_DONE "Scan done"
 #define D_NO_NETWORKS_FOUND "No networks found"
 #define D_REFRESH_TO_SCAN_AGAIN "Refresh to scan again"
