@@ -103,4 +103,9 @@ Copied from xsns_53_sml.ino as Lat Long edits need this (Float causes rounding e
   return result;
 }//CharToDouble
 
-
+void TasPlusShowSwitchStatus(void){
+#ifdef SS_SHELLY1
+    uint i=0; //Switch 1
+    WSContentSend_P(PSTR("{s}%s{m}%s{e}"), GetSwitchText(i).c_str(), GetStateText(SwitchState(i)));
+#endif
+}

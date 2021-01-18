@@ -750,7 +750,6 @@ String GetSwitchText(uint32_t i) {
 bool MqttShowSensor(void)
 {
   ResponseAppendTime();
-
   int json_data_start = strlen(TasmotaGlobal.mqtt_data);
   for (uint32_t i = 0; i < MAX_SWITCHES; i++) {
 #ifdef USE_TM1638

@@ -111,6 +111,11 @@ Examples :
 #define MODULE          SONOFF_4CHPRO  //Module 23
 #endif
 
+#ifdef  SS_SHELLY1
+#define PRODUCT_NAME    "SS-1CHPro"
+#define MODULE          SHELLY1       //Module 45
+#endif
+
 #ifndef PRODUCT_NAME
 #define PRODUCT_NAME    "tasmota"
 #endif

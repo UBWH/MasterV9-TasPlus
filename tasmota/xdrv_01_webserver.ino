@@ -1298,7 +1298,9 @@ void WSContentSendStyle_P(const char* formatP, ...)
     WebColor(COL_TEXT_WARNING),
 #endif
     WebColor(COL_TITLE),
-    ModuleName().c_str(), SettingsText(SET_DEVICENAME));
+    PSTR(PRODUCT_NAME),   //ModuleName().c_str(), 
+    SettingsText(SET_DEVICENAME)
+    );
   if (Settings.flag3.gui_hostname_ip) {                // SetOption53 - Show hostanme and IP address in GUI main menu
     bool lip = (static_cast<uint32_t>(WiFi.localIP()) != 0);
     bool sip = (static_cast<uint32_t>(WiFi.softAPIP()) != 0);
@@ -1800,6 +1802,7 @@ bool HandleRootStatusRefresh(void)
 #endif // USE_ZIGBEE
   WSContentBegin(200, CT_HTML);
   WSContentSend_P(PSTR("{t}"));
+  TasPlusShowSwitchStatus();
   XsnsCall(FUNC_WEB_SENSOR);
   XdrvCall(FUNC_WEB_SENSOR);
   htmlTag(TM_END,TAG_TABLE);
