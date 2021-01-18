@@ -240,6 +240,8 @@ void HandleWatchdog(void){
                       WSContentSend_P(PSTR("<option value='%u' %s>"
 #ifdef SS_4CHPRO
                       "Switch"
+#elif defined(SS_SHELLY1)
+                      "Relay"
 #else
                       "Socket"
 #endif
