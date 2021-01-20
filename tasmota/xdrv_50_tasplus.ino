@@ -54,14 +54,14 @@ const char HTTP_WATCHDOG_SCRIPT[] PROGMEM =
   "</script>"
   ;
 */
-#define ID_CYCLE_SECONDS  "cs"
+//#define ID_CYCLE_SECONDS  "cs"
 #define ID_WATCHDOG       "wd"
 #define DIV_ENABLE        "en"
-#define SELECT_SOCKET     "sk"
-#define SELECT_PINGS      "sp"
-#define SELECT_INTERVAL   "si"
-#define INPUT_ADDRESS     "ia"
-#define SELECT_CYCLE_SEC  "sc"
+#define SELECT_SOCKET     "k"//"sk"
+#define SELECT_PINGS      "p"//"ps"//"sp"
+#define SELECT_INTERVAL   "i"//"si"
+#define INPUT_ADDRESS     "a"//"ia"
+#define SELECT_CYCLE_SEC  "s"//"sc"
 
 const char SELECTED[] PROGMEM = "selected";
 const char WEB_INDEX[] PROGMEM ="%s%d";
@@ -208,7 +208,9 @@ void HandleWatchdog(void){
 
   htmlTag(TM_START,TAG_FIELDSET,nullptr,PSTR("text-align:center;"));	
    htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,PSTR("text-align:left;"),PSTR("<b>&nbsp;Watchdogs&nbsp;</b>")); 
-    WSContentSend_P(PSTR("<form method='post' action=''>"));
+    //WSContentSend_P(PSTR("<form method='post' action=''>"));
+WSContentSend_P(PSTR("<form method='get' action=''>"));
+
       htmlTag(TM_STARTEND,TAG_DIV,PSTR(ID_BUTTON_TABLE));	
   	
       htmlTag(TM_START   ,TAG_FIELDSET);		
@@ -314,17 +316,12 @@ void HandleWatchdog(void){
 /***********************************************************************/
 void WatchdogSaveSettings(void){
  char webindex[20];
-// char tmp[TOPSZ];
- 
+
  for(uint8_t i=0;i<MAX_WATCHDOGS;i++){
    snprintf_P(webindex, sizeof(webindex), WEB_INDEX,DIV_ENABLE, i+1);
    WatchdogSaveEnable(i, webindex);
-
    snprintf_P(webindex, sizeof(webindex), WEB_INDEX,SELECT_SOCKET, i+1);
    WatchdogSaveSocket(i, webindex);
-
-   snprintf_P(webindex, sizeof(webindex), WEB_INDEX,SELECT_PINGS, i+1);
-   WatchdogSavePings(i, webindex);
 
    snprintf_P(webindex, sizeof(webindex), WEB_INDEX,SELECT_INTERVAL, i+1);
    WatchdogSaveSelectInterval(i, webindex);
@@ -332,8 +329,12 @@ void WatchdogSaveSettings(void){
    snprintf_P(webindex, sizeof(webindex), WEB_INDEX,INPUT_ADDRESS, i+1);
    WatchdogSavePingAddress(i, webindex);
 
+
    snprintf_P(webindex, sizeof(webindex), WEB_INDEX,SELECT_CYCLE_SEC, i+1);
    WatchdogSaveCycleSec(i, webindex);
+
+   snprintf_P(webindex, sizeof(webindex), WEB_INDEX,SELECT_PINGS, i+1);
+   WatchdogSavePings(i, webindex);
  }
 }//WatchdogSaveSettings
 
@@ -344,12 +345,12 @@ void WatchdogSaveEnable(uint8_t i, char *webindex){
 void WatchdogSaveSocket(uint8_t i, char *webindex){
   char tmp[20];
   WebGetArg(webindex, tmp, sizeof(tmp)); 
-  Settings.Watchdog[i].socket=atoi(tmp); //OK YES!
+  Settings.Watchdog[i].socket=atoi(tmp); 
 }
 
 void WatchdogSavePings(uint8_t i, char *webindex){
   char tmp[20];
-  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  WebGetArg(webindex, tmp, sizeof(tmp));   
   Settings.Watchdog[i].num_pings=atoi(tmp)-2;
 }
 
