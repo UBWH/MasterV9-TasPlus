@@ -116,6 +116,11 @@ Examples :
 #define MODULE          SHELLY1       //Module 45
 #endif
 
+#ifdef  RSSI_PRESENCE
+#define PRODUCT_NAME    "Presence"
+#define MODULE          SHELLY1       //Module 45
+#endif
+
 #ifndef PRODUCT_NAME
 #define PRODUCT_NAME    "tasmota"
 #endif

@@ -503,7 +503,7 @@ void CmndStatus(void)
     ResponseAppend_P(PSTR(",\"Sensors\":"));
     XsnsSensorState();
     ResponseJsonEndEnd();
-    MqttPublishPrefixTopic_P(STAT, PSTR(D_CMND_STATUS "4"));
+    (STAT, PSTR(D_CMND_STATUS "4"));
   }
 
   if ((0 == payload) || (5 == payload)) {

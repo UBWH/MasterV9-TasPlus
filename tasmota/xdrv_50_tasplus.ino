@@ -497,9 +497,13 @@ void WSTasPlusButton(const char* Action,const char* Text){
 /*********************************************************************************************\
  * Interface
 \*********************************************************************************************/
-#define SHORT_PRESS_MILLISEC 1000   //1 sec
+#define SHORT_PRESS_MILLISEC  1000   //1 sec
+#define NUM_RSSI              3      //samples per average
 
 bool Xdrv50(uint8_t function){
+  static uint8_t uRSSIhistory[NUM_RSSI];
+  static uint8_t iRSSIHistory = 0;
+  static uint    uLastRSSIAverage = 0;
 	
   bool result = false;    //true = call has been handled
 
@@ -549,10 +553,34 @@ bool Xdrv50(uint8_t function){
       break;
 
     case FUNC_EVERY_SECOND:
-		   WatchdogEvery1Sec();
+		  WatchdogEvery1Sec();
       if(Rtc.utc_time%4==0){	
 		   WatchdogEvery4Sec();
       }
+
+      //RSSI Presence for Approaching Garage Door
+#ifdef RSSI_PRESENCE
+
+      if(!TasmotaGlobal.global_state.wifi_down && UpTime() > 10 ){
+       uRSSIhistory[iRSSIHistory] = WifiGetRssiAsQuality(WiFi.RSSI());
+       iRSSIHistory++;
+       if(NUM_RSSI == iRSSIHistory){
+         iRSSIHistory=0;
+         uint uNewAverageRSSI=0;
+         for(uint i=0; i<NUM_RSSI;i++) uNewAverageRSSI += uRSSIhistory[i];
+         if(uLastRSSIAverage>0){
+            int iPercentChange = uNewAverageRSSI * 100 / uLastRSSIAverage; 
+            if(iPercentChange>105 || iPercentChange<95){
+              Response_P(PSTR("{\"percent\":%i,\"RSSI\":%u}"),iPercentChange-100,uNewAverageRSSI/NUM_RSSI);
+              MqttPublishPrefixTopic_P(STAT, PSTR("RSSIChange"));
+            }
+         }//uOldAverageRSSI
+         uLastRSSIAverage = uNewAverageRSSI;
+       }//Got all for average
+      }//if
+
+#endif
+
 	    break;
 #endif
 	  	  
