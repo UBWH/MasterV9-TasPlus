@@ -32,10 +32,25 @@ void HandleHelp(void){
 
 #ifndef FIRMWARE_MINIMAL
 
+#define DIV_ENABLE        "en"
+
+//#ifndef SM_URF
+#ifdef MAX_WATCHDOGS
+/*
+const char WATCHDOG_SCRIPT_CLICK_ENABLE[] PROGMEM = 
+"function cen(i){"                                          
+    "eb('" DIV_ENABLE "').style.display = eb('" DIV_ENABLE "'+i).checked?'block':'none';"
+"}";
+*/
+/********************************************************************************/
 #define WEB_WATCHDOG		          "wd"
 #define ID_BUTTON_TABLE		        "bt"
 
 const char S_WATCHDOG[]  PROGMEM = D_WATCHDOG;
+const char WATCHDOG_SCRIPT_CLICK_ENABLE[] PROGMEM = 
+"function cen(i){"                                          
+    "eb('" DIV_ENABLE "').style.display = eb('" DIV_ENABLE "'+i).checked?'block':'none';"
+"}";
 
 /***********************************************************************/
 /*
@@ -56,7 +71,6 @@ const char HTTP_WATCHDOG_SCRIPT[] PROGMEM =
 */
 //#define ID_CYCLE_SECONDS  "cs"
 #define ID_WATCHDOG       "wd"
-#define DIV_ENABLE        "en"
 #define SELECT_SOCKET     "k"//"sk"
 #define SELECT_PINGS      "p"//"ps"//"sp"
 #define SELECT_INTERVAL   "i"//"si"
@@ -66,11 +80,6 @@ const char HTTP_WATCHDOG_SCRIPT[] PROGMEM =
 const char SELECTED[] PROGMEM = "selected";
 const char WEB_INDEX[] PROGMEM ="%s%d";
 
-const char WATCHDOG_SCRIPT_CLICK_ENABLE[] PROGMEM = 
-"function cen(i){"                                          
-    "eb('" DIV_ENABLE "').style.display = eb('" DIV_ENABLE "'+i).checked?'block':'none';"
-"}"
-;
 
 const char WATCHDOG_SCRIPT_ON_TAB[] PROGMEM =
  "function ot(t,e){"                                   
@@ -129,6 +138,7 @@ void HandleWatchdog(void){
 
   if (Webserver->hasArg("save")) {
     WatchdogSaveSettings();
+    HandleConfiguration();
     webRedirect(PSTR("/cn"));								//PRG to Config
     return;
   }
@@ -473,14 +483,14 @@ void WatchdogEvery4Sec(void){
     }
   }	
 }//WatchdogEvery4Sec())
-
+#endif //MAX_WATCHDOGS
 #endif  //not MINIMAL
 
-/************************************************************\
+/*
 For implementing Post/Redirect/Get (PRG)
 See: https://en.wikipedia.org/wiki/Post/Redirect/Get
 Based on:    CaptivePortal(void)
-\************************************************************/
+*/
 void webRedirect(const char* location){		
    Webserver->sendHeader(F("Location"), String(location), true);
    WSSend(303, CT_PLAIN, "");  // Empty content inhibits Content-length header so we have to close the socket ourselves.
@@ -494,6 +504,225 @@ void WSTasPlusButton(const char* Action,const char* Text){
 	   "<p><form action='%s' method='get'><button>%s</button></form></p>"
       ),Action,Text);
 }//WSTasPlusButton
+
+#ifdef SM_URF
+
+#define WEB_DJLK		          "dj"
+#define ID_DJLK_INTERVAL      "DI"
+#define ID_UNITS              "IU"
+#define ID_MM                 "IM"
+#define ID_DISPLAY            "ID"
+#define DIV_CALCULATE         "DC"
+
+const char SCRIPT_CLICK_ENABLE[] PROGMEM = 
+"function cen(){"                                          
+    "eb('" DIV_CALCULATE "').style.display = eb('" DIV_ENABLE "').checked?'block':'none';"
+"}"
+"wl(cen);";
+
+void HandleDJLKConfiguration(void){
+  char parameter[FLOATSZ];
+
+  if (!HttpCheckPriviledgedAccess()) { return; }
+
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP), PSTR(D_CONFIGURE_DJLK));
+
+  if (Webserver->hasArg("save")) {
+    DJLKSaveSettings();
+    HandleConfiguration();
+    //webRedirect(PSTR("/cn"));								//PRG to Config
+    return;
+  }
+
+  WSContentStart_P(PSTR(D_CONFIGURE_DJLK));
+  WSContentSend_P(SCRIPT_CLICK_ENABLE);
+  WSContentSendStyle();
+  htmlPageHeader(PSTR(D_CONFIGURE_DJLK));
+  
+  htmlTag(TM_START,TAG_FIELDSET);
+   htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp" D_CONFIGURE_DJLK "&nbsp;</b>")); 
+   WSContentSend_P(PSTR(" <form method='post' action=''>"));   
+
+    //Transmit interval
+      htmlTag(TM_START,TAG_TABLE,nullptr,PSTR("width:100%%;border: 1px solid black;"));
+		    htmlTag(TM_START,TAG_TR);
+		      htmlTag(TM_START,TAG_TD,nullptr,PSTR("text-align:right;")); 
+            WSContentSend_P(PSTR("Transmit updates every "));
+		      htmlTag(TM_START,TAG_TD); 
+            WSContentSend_P(PSTR("<input title='Set to 0 (zero) to disable all updates. Max.=255' type='number' id='" ID_DJLK_INTERVAL "' min='0' max='255' value='%u'>"),Settings.serial_delimiter);
+		      htmlTag(TM_START,TAG_TD,nullptr,PSTR("text-align:left;")); 
+            WSContentSend_P(PSTR("(seconds, approx.)"));
+		    htmlTag(TM_START,TAG_TR);
+		      WSContentSend_P(PSTR("<td colspan='3' style='text-align:center'>"));
+            WSContentSend_P(PSTR("Set to 0 (zero) to disable all updates"));
+      htmlTag(TM_END,TAG_TABLE);
+
+    htmlTag(TM_START,TAG_BR);
+
+    htmlTag(TM_START,TAG_FIELDSET);
+     htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbspCalculation&nbsp;</b>")); 
+      WSContentSend_P(PSTR("<label id='ce' title='Click to Enable/Disable Calculation'>" ));  
+        WSContentSend_P(PSTR("<input onclick='cen()' id='" DIV_ENABLE "' type='checkbox' %s><b>Enable Calculation?</b>"
+	  	          ),(Settings.djlk_calculation.enabled?"checked":""));  
+    	htmlTag(TM_END ,TAG_LABEL);
+
+      htmlTag(TM_START,TAG_DIV,PSTR(DIV_CALCULATE ));
+
+        htmlTag(TM_START,TAG_TABLE,nullptr,PSTR("width:100%%;border: 1px solid black;"));
+		      htmlTag(TM_START,TAG_TR);
+            WSContentSend_P(PSTR("<th style='text-align:center' rowspan='2'>"));
+              WSContentSend_P(PSTR("Range<br>(mm)"));
+            WSContentSend_P(PSTR("<th style='text-align:center' colspan='2'>"));
+              WSContentSend_P(PSTR("Display"));
+		      htmlTag(TM_START,TAG_TR);
+  		      htmlTag(TM_START,TAG_TH,nullptr,PSTR("text-align:right"));
+              WSContentSend_P(PSTR("Value"));
+		        htmlTag(TM_START,TAG_TH,nullptr,PSTR("text-align:center")); 
+             WSContentSend_P(PSTR("Units"));
+
+		      for(uint i=0;i<MAX_CALCULATIONS;i++){
+  		      htmlTag(TM_START,TAG_TR);
+  		        htmlTag(TM_START,TAG_TD); 
+                WSContentSend_P(PSTR(
+                 "<input type='number' id='" ID_MM "%u' value='%u' title='0(zero)=ignore this row' style='width:7em' max='65535' min='0'>")
+                 ,i,Settings.djlk_calculation.calPair[i].mm);
+              htmlTag(TM_START,TAG_TD); 
+                WSContentSend_P(PSTR(
+                 "<input style='text-align:right' type='number' id='" ID_DISPLAY "%u' value='%u' max='65535' min='0'>")
+                 ,i,Settings.djlk_calculation.calPair[i].value);
+              if(!i){
+                WSContentSend_P(PSTR("<td valign='middle' rowspan='%u'>"),MAX_CALCULATIONS);
+                  WSContentSend_P(PSTR(
+                "<input type='text' id='" ID_UNITS "' placeholder='e.g. litres  (%u chars max.)' value='%s' maxlength='%u' size='%u'>")
+                 ,STRING_CALCULATION_UNITS-1,Settings.djlk_calculation.cUnits,STRING_CALCULATION_UNITS-1,STRING_CALCULATION_UNITS);
+              }
+          }
+        htmlTag(TM_END,TAG_TABLE);
+
+      htmlTag(TM_END,TAG_DIV);
+
+    htmlTag(TM_END,TAG_FIELDSET);
+
+  htmlTag(TM_END,TAG_FIELDSET);
+      
+  WSContentSend_P(HTTP_FORM_END);
+	WSContentSpaceButton(BUTTON_CONFIGURATION);
+  WSContentStop();
+}//HandleDJLKConfiguration
+
+/***********************************************************************/
+void DJLKSaveSettings(void){
+  char tmp[20];
+  char webindex[20];
+  djlk_calculation_pair_t calPair[MAX_CALCULATIONS];
+  djlk_calculation_pair_t tempCalPair;
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),ID_DJLK_INTERVAL);
+  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  Settings.serial_delimiter=atoi(tmp); 
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),DIV_ENABLE);
+  Settings.djlk_calculation.enabled=Webserver->hasArg(webindex);
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),ID_UNITS);
+  WebGetArg(webindex, Settings.djlk_calculation.cUnits, sizeof(Settings.djlk_calculation.cUnits));
+
+  for(uint i=0;i<MAX_CALCULATIONS;i++){
+    snprintf_P(webindex, sizeof(webindex), PSTR("%s%u"),ID_MM,i);
+    WebGetArg(webindex, tmp, sizeof(tmp)); 
+    calPair[i].mm = atoi(tmp);
+    
+    snprintf_P(webindex, sizeof(webindex), PSTR("%s%u"),ID_DISPLAY,i);
+    WebGetArg(webindex, tmp, sizeof(tmp)); 
+    calPair[i].value = atoi(tmp);
+  }
+
+  //Sort: largest to smallest, and remove same 'mm' entries
+  bool bSorted = false;
+  while(!bSorted){
+    bSorted=true;
+    for(uint i=1;i<MAX_CALCULATIONS;i++){
+      if(calPair[i].mm>calPair[i-1].mm){
+        tempCalPair  = calPair[i-1];
+        calPair[i-1] = calPair[i];
+        calPair[i]   = tempCalPair;
+        bSorted=false;
+      }
+      if(calPair[i].mm){
+        if(calPair[i].mm==calPair[i-1].mm){
+          calPair[i].mm     = 0;
+          calPair[i].value  = 0;
+          bSorted=false;
+        }
+      } else {
+        calPair[i].value  = 0;
+      }
+    }
+  }
+
+  for(uint i=0;i<MAX_CALCULATIONS;i++){
+    Settings.djlk_calculation.calPair[i] = calPair[i];
+  }
+}//DJLKSaveSettings
+
+int djlk_calculation(int imm){
+  if(!Settings.djlk_calculation.enabled) return -999;
+
+  //make sure there is at least 2 points
+  uint8_t uNumPoints=0;
+  
+  for(uint i=0;i<MAX_CALCULATIONS;i++){
+    if(Settings.djlk_calculation.calPair[i].mm){
+      uNumPoints++;
+    }
+  }
+  if(uNumPoints<2) return -999;
+  
+  //Workout which zone we are in
+  // Assumes that calPair[] is sorted in decending order on .mm (done during save)
+  /*         Zone 0
+    mm[0] ----------------
+             Zone 0
+    mm[1] ----------------
+             Zone 1
+    mm[2] ----------------
+             Zone 2
+    mm[3] ----------------
+             Zone 2
+  */
+  uint8_t uZone=0;  
+  for(uint i=2;i<MAX_CALCULATIONS-1;i++){
+    if(       Settings.djlk_calculation.calPair[i].mm &&
+        imm > Settings.djlk_calculation.calPair[i].mm
+      ){
+      uZone=i-1;
+    }
+  }
+
+  //Get slope of line
+  int iDeltaX = Settings.djlk_calculation.calPair[uZone].mm - 
+                Settings.djlk_calculation.calPair[uZone+1].mm;
+
+  int iDeltaY = ((int)Settings.djlk_calculation.calPair[uZone].value) - 
+                ((int)Settings.djlk_calculation.calPair[uZone+1].value);
+
+  double dSlope;
+  if(iDeltaX){
+    dSlope = ((double)iDeltaY) / ((double)iDeltaX);
+  } else {
+    return -999;
+  }
+  //AddLog_P(LOG_LEVEL_INFO, PSTR("Zone:%u imm:%u DeltaY/X:%d/%d"),uZone,imm,iDeltaY,iDeltaX);	
+
+  //Calculate 
+  double dComputed = (dSlope * ((double)(imm-((int)Settings.djlk_calculation.calPair[uZone+1].mm))))
+                     + 
+                     Settings.djlk_calculation.calPair[uZone+1].value;
+  return (int)dComputed;
+}
+#endif
+
+
 /*********************************************************************************************\
  * Interface
 \*********************************************************************************************/
@@ -541,19 +770,31 @@ bool Xdrv50(uint8_t function){
 
     case FUNC_WEB_ADD_HANDLER:
       Webserver->on("/" WEB_HELP, HandleHelp);
+
+#ifdef MAX_WATCHDOGS
       Webserver->on("/" WEB_WATCHDOG, HandleWatchdog);
+#else
+      Webserver->on("/" WEB_DJLK,HandleDJLKConfiguration);
+#endif
       break;
 
     case FUNC_WEB_ADD_BUTTON:											
+#ifdef SM_URF
+      WSTasPlusButton(WEB_DJLK    	,D_CONFIGURE_DJLK);
+#else
       WSTasPlusButton(WEB_WATCHDOG	,D_WATCHDOG);
+#endif
       break;
 
+#ifdef MAX_WATCHDOGS
     case FUNC_EVERY_SECOND:
-		   WatchdogEvery1Sec();
+		  WatchdogEvery1Sec();
       if(Rtc.utc_time%4==0){	
 		   WatchdogEvery4Sec();
       }
 	    break;
+#endif
+
 #endif
 	  	  
   }

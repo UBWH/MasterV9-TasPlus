@@ -43,6 +43,13 @@ int serial_bridge_in_byte_counter = 0;
 bool serial_bridge_active = true;
 bool serial_bridge_raw = false;
 
+#ifdef SM_URF
+#define MAX_DJLK_SAMPLES 40   //eg. 20 = 2 seconds of data to average
+static uint16_t uSample[MAX_DJLK_SAMPLES];  //Circular sample buffer
+static uint8_t  uSampleIndex=0;
+static     float   fAverage=0.0;
+#endif
+
 void SerialBridgeInput(void)
 {
   while (SerialBridgeSerial->available()) {
@@ -55,11 +62,37 @@ void SerialBridgeInput(void)
       return;
     }
     if (serial_in_byte || serial_bridge_raw) {                                 // Any char between 1 and 127 or any char (0 - 255)
-      bool in_byte_is_delimiter =                                              // Char is delimiter when...
+#ifdef SM-URF
+      //DJLK stream looks like FF xx xx cc  (xx = data, cc = checksum)
+      //Use Settings.serial_delimiter as counter for numer of packets to discard before reporting
+      // Settings.serial_delimiter ==0 => Disable MQTT reporting
+      // Settings.serial_delimiter ==0 => delay 255 sec = 2550 samples
+      static uint16_t uPacketCounter;
+      bool in_byte_is_delimiter =  serial_in_byte == 0xFF;
+      if(in_byte_is_delimiter){
+        if( (Settings.serial_delimiter != 0) && (uPacketCounter++ >= (Settings.serial_delimiter*10))){
+          //Publish
+          uPacketCounter = 0;
+        } else {
+          //Store in Sample Buffer if Checksum OK
+          if(serial_bridge_in_byte_counter > 2){
+            uint uCheckSum = (serial_bridge_buffer[0] + serial_bridge_buffer[1] + 0xFF) & 0xFF;
+            if(uCheckSum == serial_bridge_buffer[2] && Settings.serial_delimiter!=0){
+               uSample[uSampleIndex] = ((uint)serial_bridge_buffer[0]<<8) + ((uint)serial_bridge_buffer[1]);
+               uSampleIndex++;
+               if(uSampleIndex == MAX_DJLK_SAMPLES)uSampleIndex=0;
+            }
+          }
+          serial_bridge_in_byte_counter = 0;
+          return;
+        }//if
+      }//is delimiter
+#else                                                                        // Char is delimiter when...
+      bool in_byte_is_delimiter =  
         (((Settings.serial_delimiter < 128) && (serial_in_byte == Settings.serial_delimiter)) || // Any char between 1 and 127 and being delimiter
         ((Settings.serial_delimiter == 128) && !isprint(serial_in_byte))) &&   // Any char not between 32 and 127
         !serial_bridge_raw;                                                    // In raw mode (CMND_SERIALSEND3) there is never a delimiter
-
+#endif
       if ((serial_bridge_in_byte_counter < SERIAL_BRIDGE_BUFFER_SIZE -1) &&    // Add char to string if it still fits and ...
           !in_byte_is_delimiter) {                                             // Char is not a delimiter
         serial_bridge_buffer[serial_bridge_in_byte_counter++] = serial_in_byte;
@@ -79,6 +112,57 @@ void SerialBridgeInput(void)
     serial_bridge_buffer[serial_bridge_in_byte_counter] = 0;                   // Serial data completed
     bool assume_json = (!serial_bridge_raw && (serial_bridge_buffer[0] == '{'));
 
+#ifdef SM_URF
+    //Calculate Average and send MQTT
+    uint32_t uAverage=0;
+    uint     uCount=0;
+    for(uint i=0;i<MAX_DJLK_SAMPLES;i++){
+      uAverage += uSample[i];
+      if(uSample[i])uCount++;
+      uSample[i]=0;
+    }
+
+    if(uCount>0){
+      fAverage = ((float)uAverage) / ((float)uCount);
+    }
+    
+//AddLog_P(LOG_LEVEL_INFO,PSTR("Averaging: %u / %u = %u"),uAverage,uCount,((uint)fAverage) );
+    //Round to nearest 10mm
+    uAverage = (uint)((fAverage + 5.0)/10.0);
+    uAverage *= 10;
+
+    char time_str[TIMESZ];
+    ResponseGetTime(0, time_str);
+    ResponseClear();
+    if(Settings.djlk_calculation.enabled){
+          int iComputed = (int)djlk_calculation((uint)fAverage);
+          Response_P(PSTR("%s,\"mm\":%u,\"computed\":%d,\"units\":\"%s\""),
+            time_str, uAverage,iComputed,Settings.djlk_calculation.cUnits);    
+    } else{
+      Response_P(PSTR("%s,\"mm\":%u"),time_str, uAverage );    
+    }
+    ResponseJsonEnd();
+
+    MqttPublishPrefixTopicRulesProcess_P(TELE, PSTR("RANGE"));
+//    ResponseJsonEnd();
+
+/*
+    //Check Checksum and send MQTT
+    uint uCheckSum = (serial_bridge_buffer[0] + serial_bridge_buffer[1] + 0xFF) & 0xFF;
+    if(uCheckSum == serial_bridge_buffer[2] && Settings.serial_delimiter!=0){
+      char time_str[TIMESZ];
+      ResponseGetTime(0, time_str);
+  //    AddLog_P(LOG_LEVEL_INFO,PSTR("TimeStr = %s"),time_str );
+      uDJLKmm = ((uint)serial_bridge_buffer[0]<<8) + ((uint)serial_bridge_buffer[1]);
+      ResponseClear();
+      Response_P(PSTR("%s,\"mm\":%u"),time_str,uDJLKmm);
+  //    ResponseAppend_P(PSTR("\""));
+      ResponseJsonEnd();
+      MqttPublishPrefixTopicRulesProcess_P(TELE, PSTR("DISTANCE"));
+    }
+*/
+      
+#else    
     Response_P(PSTR("{\"" D_JSON_SSERIALRECEIVED "\":"));
     if (assume_json) {
       ResponseAppend_P(serial_bridge_buffer);
@@ -93,8 +177,8 @@ void SerialBridgeInput(void)
       ResponseAppend_P(PSTR("\""));
     }
     ResponseJsonEnd();
-
     MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, PSTR(D_JSON_SSERIALRECEIVED));
+#endif
     serial_bridge_in_byte_counter = 0;
   }
 }
@@ -103,7 +187,12 @@ void SerialBridgeInput(void)
 
 void SerialBridgeInit(void)
 {
+#ifdef SM_URF
+  serial_bridge_raw = true;
+#endif
+
   serial_bridge_active = false;
+
   if (PinUsed(GPIO_SBR_RX) && PinUsed(GPIO_SBR_TX)) {
     SerialBridgeSerial = new TasmotaSerial(Pin(GPIO_SBR_RX), Pin(GPIO_SBR_TX), HARDWARE_FALLBACK);
     if (SerialBridgeSerial->begin(Settings.sbaudrate * 300)) {  // Baud rate is stored div 300 so it fits into 16 bits
@@ -197,6 +286,17 @@ bool Xdrv08(uint8_t function)
       case FUNC_COMMAND:
         result = DecodeCommand(kSerialBridgeCommands, SerialBridgeCommand);
         break;
+
+#ifdef SM_URF
+      case FUNC_WEB_SENSOR:
+        WSContentSend_PD(PSTR("{s}Range{m}%u mm"), ((int)fAverage));
+        if(Settings.djlk_calculation.enabled){
+          int iComputed = (int)djlk_calculation((int)fAverage);
+          WSContentSend_PD(PSTR("{s}Calculated{m}%d %s"), iComputed, Settings.djlk_calculation.cUnits);
+        }
+        break;
+#endif
+
     }
   }
   return result;

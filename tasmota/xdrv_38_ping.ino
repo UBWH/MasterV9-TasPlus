@@ -269,8 +269,9 @@ extern "C" {
     ping->ip = ip;
     ping->to_send_count = count - 1;
     ping->hostname = hostname;
-	ping->watchdog = iWatchdog;
-
+#ifdef MAX_WATCHDOGS
+	  ping->watchdog = iWatchdog;
+#endif
     // add to Linked List from head
     ping->next = ping_head;
     ping_head = ping;         // insert at head
@@ -296,6 +297,7 @@ void PingResponsePoll(void) {
     if (ping->done) {
       uint32_t success = ping->success_count;
       uint32_t ip = ping->ip;
+#ifdef MAX_WATCHDOGS
 	if(ping->watchdog){
      WatchdogPingResponse(ping->watchdog-1,success);
 	} 
@@ -320,6 +322,28 @@ void PingResponsePoll(void) {
                       ping->max_time,
                       success ? ping->sum_time / success : 0
                       );
+#else
+	if(!success) {
+      Response_P(PSTR("{\"" D_JSON_PING "\":{\"%s\":{"
+                      "\"Reachable\":%s"
+                      ",\"IP\":\"%d.%d.%d.%d\""
+                      ",\"Success\":%d"
+                      ",\"Timeout\":%d"
+                      ",\"MinTime\":%d"
+                      ",\"MaxTime\":%d"
+                      ",\"AvgTime\":%d"
+                      "}}}"),
+                      ping->hostname.c_str(),
+                      success ? "true" : "false",
+                      ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, ip >> 24,
+                      success,
+                      ping->timeout_count,
+                      success ? ping->min_time : 0,
+                      ping->max_time,
+                      success ? ping->sum_time / success : 0
+                      );
+#endif
+
       MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, PSTR(D_JSON_PING));
     }
       // remove from linked list
