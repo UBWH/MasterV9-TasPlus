@@ -22,5 +22,7 @@
 
 const uint32_t VERSION = 0x09020000
                              + 0x01        //Migrate TasPlus V8->V9
+                             + 0x01        //Add SG-RANGE
+                             
                         ;
 #endif  // _TASMOTA_VERSION_H_

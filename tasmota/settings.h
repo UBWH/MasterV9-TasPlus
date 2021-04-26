@@ -22,7 +22,7 @@
 
 const uint8_t PARAM8_SIZE = 18;            // Number of param bytes (SetOption)
 
-#ifdef  SM_URF
+#ifdef  SG_RANGE
 typedef union {                            // Ultrasonic Calibrations
   uint32_t data;                           
   struct {                  
@@ -677,7 +677,7 @@ struct {
   uint8_t       free_f60[44];              // F60 - Decrement if adding new Setting variables just above and below
   uint32_t      wan_ip_address; 		       // If not zero, block WAN requests except from this IPV4 address	(4 bytes total)								
   
-  #ifdef SM_URF
+  #ifdef SG_RANGE
   djlk_calculation_t  djlk_calculation;     // 24 bytes total
   #else
   watchdog_t    Watchdog[MAX_WATCHDOGS];    // Ping Watchdogs (16 bits / 2 bytes each = 8 bytes total)					 

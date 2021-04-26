@@ -43,11 +43,12 @@ int serial_bridge_in_byte_counter = 0;
 bool serial_bridge_active = true;
 bool serial_bridge_raw = false;
 
-#ifdef SM_URF
+#ifdef SG_RANGE
 #define MAX_DJLK_SAMPLES 40   //eg. 20 = 2 seconds of data to average
 static uint16_t uSample[MAX_DJLK_SAMPLES];  //Circular sample buffer
 static uint8_t  uSampleIndex=0;
-static     float   fAverage=0.0;
+static  float   fAverage=0.0;
+uint getSGRANGEaverage(void){return fAverage;}
 #endif
 
 void SerialBridgeInput(void)
@@ -62,25 +63,37 @@ void SerialBridgeInput(void)
       return;
     }
     if (serial_in_byte || serial_bridge_raw) {                                 // Any char between 1 and 127 or any char (0 - 255)
-#ifdef SM-URF
+#ifdef SG_RANGE
       //DJLK stream looks like FF xx xx cc  (xx = data, cc = checksum)
+      
+      //OLD:
       //Use Settings.serial_delimiter as counter for numer of packets to discard before reporting
-      // Settings.serial_delimiter ==0 => Disable MQTT reporting
-      // Settings.serial_delimiter ==0 => delay 255 sec = 2550 samples
+      // Settings.serial_delimiter ==0   => Disable MQTT reporting
+      // Settings.serial_delimiter ==255 => delay 255 sec = 2550 samples
+
+      //NEW: 
+      // recalculate average every second (approx 10 packets)
+
       static uint16_t uPacketCounter;
       bool in_byte_is_delimiter =  serial_in_byte == 0xFF;
       if(in_byte_is_delimiter){
-        if( (Settings.serial_delimiter != 0) && (uPacketCounter++ >= (Settings.serial_delimiter*10))){
+ //       if( (Settings.serial_delimiter != 0) && (uPacketCounter++ >= (Settings.serial_delimiter*10))){
+        if( uPacketCounter++ >= 10){
           //Publish
           uPacketCounter = 0;
         } else {
           //Store in Sample Buffer if Checksum OK
           if(serial_bridge_in_byte_counter > 2){
             uint uCheckSum = (serial_bridge_buffer[0] + serial_bridge_buffer[1] + 0xFF) & 0xFF;
-            if(uCheckSum == serial_bridge_buffer[2] && Settings.serial_delimiter!=0){
+//            if(uCheckSum == serial_bridge_buffer[2] && Settings.serial_delimiter!=0){
+            if(uCheckSum == serial_bridge_buffer[2]){
+
                uSample[uSampleIndex] = ((uint)serial_bridge_buffer[0]<<8) + ((uint)serial_bridge_buffer[1]);
                uSampleIndex++;
                if(uSampleIndex == MAX_DJLK_SAMPLES)uSampleIndex=0;
+
+ //              if(uSampleIndex==0) AddLog_P(LOG_LEVEL_INFO,PSTR("Sample %X %X"),(uint)serial_bridge_buffer[0],(uint)serial_bridge_buffer[1]);
+
             }
           }
           serial_bridge_in_byte_counter = 0;
@@ -112,11 +125,13 @@ void SerialBridgeInput(void)
     serial_bridge_buffer[serial_bridge_in_byte_counter] = 0;                   // Serial data completed
     bool assume_json = (!serial_bridge_raw && (serial_bridge_buffer[0] == '{'));
 
-#ifdef SM_URF
-    //Calculate Average and send MQTT
+#ifdef SG_RANGE
+    //Calculate Average and save
     uint32_t uAverage=0;
     uint     uCount=0;
+//AddLog_P(LOG_LEVEL_INFO,PSTR("Samples"));
     for(uint i=0;i<MAX_DJLK_SAMPLES;i++){
+ //AddLog_P(LOG_LEVEL_INFO,PSTR("%X"),uSample[i]);
       uAverage += uSample[i];
       if(uSample[i])uCount++;
       uSample[i]=0;
@@ -127,9 +142,13 @@ void SerialBridgeInput(void)
     }
     
 //AddLog_P(LOG_LEVEL_INFO,PSTR("Averaging: %u / %u = %u"),uAverage,uCount,((uint)fAverage) );
+
     //Round to nearest 10mm
-    uAverage = (uint)((fAverage + 5.0)/10.0);
-    uAverage *= 10;
+    //Not needed with the A01NYUB as it is less noisy
+    //uAverage = (uint)((fAverage + 5.0)/10.0);
+    //uAverage *= 10;
+/* No longer needed
+    uAverage = fAverage;
 
     char time_str[TIMESZ];
     ResponseGetTime(0, time_str);
@@ -145,6 +164,7 @@ void SerialBridgeInput(void)
 
     MqttPublishPrefixTopicRulesProcess_P(TELE, PSTR("RANGE"));
 //    ResponseJsonEnd();
+*/
 
 /*
     //Check Checksum and send MQTT
@@ -187,7 +207,7 @@ void SerialBridgeInput(void)
 
 void SerialBridgeInit(void)
 {
-#ifdef SM_URF
+#ifdef SG_RANGE
   serial_bridge_raw = true;
 #endif
 
@@ -286,16 +306,6 @@ bool Xdrv08(uint8_t function)
       case FUNC_COMMAND:
         result = DecodeCommand(kSerialBridgeCommands, SerialBridgeCommand);
         break;
-
-#ifdef SM_URF
-      case FUNC_WEB_SENSOR:
-        WSContentSend_PD(PSTR("{s}Range{m}%u mm"), ((int)fAverage));
-        if(Settings.djlk_calculation.enabled){
-          int iComputed = (int)djlk_calculation((int)fAverage);
-          WSContentSend_PD(PSTR("{s}Calculated{m}%d %s"), iComputed, Settings.djlk_calculation.cUnits);
-        }
-        break;
-#endif
 
     }
   }

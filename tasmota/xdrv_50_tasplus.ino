@@ -10,6 +10,13 @@
 #define WEB_HELP		        "he"
 const char S_HELP[] PROGMEM = D_HELP;
 
+#ifdef SS_SHELLY1
+ uint uSwitchCounter = 0;
+ bool bSwitchState = false;
+ void resetSwitchCounter(void){uSwitchCounter=0;bSwitchState = false;}
+#endif
+
+
 /***********************************************************************/
 void HandleHelp(void){
   if (!HttpCheckPriviledgedAccess()) { return; }
@@ -34,7 +41,7 @@ void HandleHelp(void){
 
 #define DIV_ENABLE        "en"
 
-//#ifndef SM_URF
+//#ifndef SG_RANGE
 #ifdef MAX_WATCHDOGS
 /*
 const char WATCHDOG_SCRIPT_CLICK_ENABLE[] PROGMEM = 
@@ -505,7 +512,7 @@ void WSTasPlusButton(const char* Action,const char* Text){
       ),Action,Text);
 }//WSTasPlusButton
 
-#ifdef SM_URF
+#ifdef SG_RANGE
 
 #define WEB_DJLK		          "dj"
 #define ID_DJLK_INTERVAL      "DI"
@@ -543,6 +550,7 @@ void HandleDJLKConfiguration(void){
    htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp" D_CONFIGURE_DJLK "&nbsp;</b>")); 
    WSContentSend_P(PSTR(" <form method='post' action=''>"));   
 
+ /*   no longer used as teleperiod manages update rate
     //Transmit interval
       htmlTag(TM_START,TAG_TABLE,nullptr,PSTR("width:100%%;border: 1px solid black;"));
 		    htmlTag(TM_START,TAG_TR);
@@ -558,7 +566,7 @@ void HandleDJLKConfiguration(void){
       htmlTag(TM_END,TAG_TABLE);
 
     htmlTag(TM_START,TAG_BR);
-
+*/
     htmlTag(TM_START,TAG_FIELDSET);
      htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbspCalculation&nbsp;</b>")); 
       WSContentSend_P(PSTR("<label id='ce' title='Click to Enable/Disable Calculation'>" ));  
@@ -617,10 +625,11 @@ void DJLKSaveSettings(void){
   djlk_calculation_pair_t calPair[MAX_CALCULATIONS];
   djlk_calculation_pair_t tempCalPair;
 
+/* No longer used
   snprintf_P(webindex, sizeof(webindex), PSTR("%s"),ID_DJLK_INTERVAL);
   WebGetArg(webindex, tmp, sizeof(tmp)); 
   Settings.serial_delimiter=atoi(tmp); 
-
+*/
   snprintf_P(webindex, sizeof(webindex), PSTR("%s"),DIV_ENABLE);
   Settings.djlk_calculation.enabled=Webserver->hasArg(webindex);
 
@@ -722,15 +731,75 @@ int djlk_calculation(int imm){
 }
 #endif
 
+#ifdef SG_RANGE
+void SGRANGEshow(bool json){
+  uint uAverage = getSGRANGEaverage();
+  int iComputed;
+  if(Settings.djlk_calculation.enabled){
+    iComputed = (int)djlk_calculation(uAverage);
+  }
+  
+  if (json) {
+    ResponseAppend_P(PSTR(",\"mm\":%u"),uAverage);
+    if(Settings.djlk_calculation.enabled){ 
+      ResponseAppend_P(PSTR(",\"computed\":%d,\"units\":\"%s\""),iComputed,Settings.djlk_calculation.cUnits);
+    }
+#ifdef USE_WEBSERVER
+  } else {
+    WSContentSend_PD(PSTR("{s}Range{m}%u mm"), uAverage);
+    if(Settings.djlk_calculation.enabled){ 
+      WSContentSend_PD(PSTR("{s}Calculated{m}%d %s"),iComputed ,Settings.djlk_calculation.cUnits);
+    }
 
+#endif  // USE_WEBSERVER
+  }
+}
+#endif
+
+
+#ifdef SS_SHELLY1
+void SS1CHProShow(bool json){
+  if (json) {
+    ResponseAppend_P(PSTR(",\"closures\":%u"),uSwitchCounter);
+#ifdef USE_WEBSERVER
+  } else {
+    if(uSwitchCounter)WSContentSend_PD(PSTR("{s}Switch1 closures{m}%u"), uSwitchCounter);
+#endif  // USE_WEBSERVER
+  }
+}
+#endif
+/*************************************************************************\
+ * Commands
+\*********************************************************************************************/
+ //bool Xdrv50Cmnd(void){
+ // bool serviced = true;
+//  bool show_parms = true;
+//  char sub_string[XdrvMailbox.data_len +1];
+//  switch (XdrvMailbox.payload) {
+//    case 1:
+//      break;
+//    case 2:
+//      if (strchr(XdrvMailbox.data, ',') != nullptr) {
+//        Settings.windmeter_pulses_x_rot = (uint8_t)strtol(subStr(sub_string, XdrvMailbox.data, ",", 2), nullptr, 10);
+//      }
+//      break;
+//  }
+
+//  if (show_parms) {
+//    Response_P(PSTR("{\"counter\":%u}"),uSwitchCounter);
+//  }
+//  return serviced;
+//}
 /*********************************************************************************************\
  * Interface
 \*********************************************************************************************/
 #define SHORT_PRESS_MILLISEC 1000   //1 sec
 
+
 bool Xdrv50(uint8_t function){
 	
   bool result = false;    //true = call has been handled
+
 
   switch (function) {
 #ifdef FIRMWARE_MINIMAL
@@ -779,7 +848,7 @@ bool Xdrv50(uint8_t function){
       break;
 
     case FUNC_WEB_ADD_BUTTON:											
-#ifdef SM_URF
+#ifdef SG_RANGE
       WSTasPlusButton(WEB_DJLK    	,D_CONFIGURE_DJLK);
 #else
       WSTasPlusButton(WEB_WATCHDOG	,D_WATCHDOG);
@@ -792,7 +861,47 @@ bool Xdrv50(uint8_t function){
       if(Rtc.utc_time%4==0){	
 		   WatchdogEvery4Sec();
       }
+//	    AddLog_P(LOG_LEVEL_INFO,  PSTR("state=%u counter=%u"),bSwitchState,uSwitchCounter);	
 	    break;
+#endif
+
+#ifdef SG_RANGE
+    case FUNC_JSON_APPEND:
+      SGRANGEshow(true);
+      break;
+    
+    case FUNC_WEB_SENSOR:
+      SGRANGEshow(false);
+      break;
+#endif
+
+#ifdef SS_SHELLY1
+    case FUNC_JSON_APPEND:
+      SS1CHProShow(true);
+      break;
+
+    case FUNC_COMMAND_SENSOR:
+    case FUNC_COMMAND_DRIVER:
+    AddLog_P(LOG_LEVEL_INFO,  PSTR("cmd_SENSOR index=%u payload=%u"),XdrvMailbox.index,XdrvMailbox.payload);
+ //       if (XDRV_50 == XdrvMailbox.index) {
+  //        result = Xdrv50Cmnd();
+   //     }
+     break;
+
+    case FUNC_WEB_SENSOR:
+      //WSContentSend_PD(PSTR("{s}Switch1 closures{m}%u"), uSwitchCounter);
+      SS1CHProShow(false);
+      break;
+
+    case FUNC_EVERY_100_MSECOND:
+      bool bTemp = SwitchState(0);
+      if(bTemp && (bTemp != bSwitchState)) {
+        uSwitchCounter++;
+      }
+      bSwitchState = bTemp;
+      break;
+
+
 #endif
 
 #endif

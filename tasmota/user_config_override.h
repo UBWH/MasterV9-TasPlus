@@ -112,12 +112,16 @@ Examples :
 #endif
 
 #ifdef  SS_SHELLY1
+#ifdef  SG_TEMP
+#define PRODUCT_NAME    "SG-TEMP"
+#else
 #define PRODUCT_NAME    "SS-1CHPro"
+#endif
 #define MODULE          SHELLY1       //Module 45
 #endif
 
-#ifdef  SM_URF
-#define PRODUCT_NAME    "SM-URF"
+#ifdef  SG_RANGE
+#define PRODUCT_NAME    "SG-RANGE"
 #define MODULE          SONOFF_SV       
 #endif
 
@@ -125,7 +129,7 @@ Examples :
 #define PRODUCT_NAME    "tasmota"
 #endif
 
-#ifdef  SM_URF
+#ifdef  SG_RANGE
 #define MAX_CALCULATIONS          4     //Up to 4 calculation points
 #define STRING_CALCULATION_UNITS  7     //e.g. 'litres'  (6 chars plus zero)
 #else
