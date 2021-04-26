@@ -1493,9 +1493,15 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
   },
   {                     // SONOFF_SV - Sonoff SV (ESP8266)
     GPI8_KEY1,          // GPIO00 Button
+#ifdef SG_RANGE
+    GPI8_SBR_TX ,          // GPIO01 SerBr Tx
+    0,
+    GPI8_SBR_RX,           // GPIO03 SerBr Rx
+#else
     GPI8_USER,          // GPIO01 Serial RXD and Optional sensor
     0,
     GPI8_USER,          // GPIO03 Serial TXD and Optional sensor
+#endif
     GPI8_USER,          // GPIO04 Optional sensor
     GPI8_USER,          // GPIO05 Optional sensor
                         // GPIO06 (SD_CLK   Flash)
@@ -2016,7 +2022,11 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
     0, 0
   },
   {                     // SHELLY1 - Shelly1 Open Source (ESP8266 - 2MB) - https://shelly.cloud/shelly1-open-source/
+  #ifdef SG_TEMP
+    GPI8_DSB,           // GPIO0 = DS18B20
+  #else
     GPI8_USER,          // GPIO00 - Can be changed to GPI8_USER, only if Shelly is powered with 12V DC
+  #endif
     GPI8_USER,          // GPIO01 Serial RXD - Can be changed to GPI8_USER, only if Shelly is powered with 12V DC
     0,
     GPI8_USER,          // GPIO03 Serial TXD - Can be changed to GPI8_USER, only if Shelly is powered with 12V DC

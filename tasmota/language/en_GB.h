@@ -253,6 +253,7 @@
 #define D_BUTTON_TOGGLE "Toggle"
 #define D_CONFIGURATION "Configuration"
 #define D_CONFIGURE_CLOCK "Configure Clock"
+#define D_CONFIGURE_DJLK "Configure Range Finder"
 #define D_INFORMATION "Information"
 #define D_FIRMWARE_UPGRADE "Firmware Upgrade"
 #define D_CONSOLE "Console"
@@ -313,6 +314,7 @@
 #define D_HE_WAN_IP "0.0.0.0: Permit all WAN addresses"
 #define D_HELP         "Help"
 #define D_WATCHDOG    "Configure Watchdog"
+
 
 #define D_OTHER_PARAMETERS "Other parameters"
 #define D_TEMPLATE "Template"

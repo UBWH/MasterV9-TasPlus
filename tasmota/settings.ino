@@ -757,7 +757,12 @@ void SettingsDefaultSet2(void)
   Settings.serial_config = TS_SERIAL_8N1;
   Settings.baudrate = APP_BAUDRATE / 300;
   Settings.sbaudrate = SOFT_BAUDRATE / 300;
+#ifdef SG_RANGE
+  Settings.serial_delimiter = 30;   //Use this for the reporting interval (secs)
+#else
   Settings.serial_delimiter = 0xff;
+#endif
+
   Settings.seriallog_level = SERIAL_LOG_LEVEL;
 
   // Ethernet

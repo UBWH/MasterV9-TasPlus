@@ -112,16 +112,29 @@ Examples :
 #endif
 
 #ifdef  SS_SHELLY1
+#ifdef  SG_TEMP
+#define PRODUCT_NAME    "SG-TEMP"
+#else
 #define PRODUCT_NAME    "SS-1CHPro"
+#endif
 #define MODULE          SHELLY1       //Module 45
+#endif
+
+#ifdef  SG_RANGE
+#define PRODUCT_NAME    "SG-RANGE"
+#define MODULE          SONOFF_SV       
 #endif
 
 #ifndef PRODUCT_NAME
 #define PRODUCT_NAME    "tasmota"
 #endif
 
-
+#ifdef  SG_RANGE
+#define MAX_CALCULATIONS          4     //Up to 4 calculation points
+#define STRING_CALCULATION_UNITS  7     //e.g. 'litres'  (6 chars plus zero)
+#else
 #define MAX_WATCHDOGS    4      // Allow up to 4 watchdog timers
+#endif
 
 #ifdef  OTA_URL
 #undef  OTA_URL
@@ -134,8 +147,8 @@ Examples :
 #endif
 // Remove unnecessary modules
 #undef USE_SHELLY_DIMMER
-#undef ROTARY_V1
 #undef USE_SONOFF_RF
+#undef ROTARY_V1
 #undef USE_RF_FLASH
 #undef USE_SONOFF_SC
 #undef USE_ARMTRONIX_DIMMERS
@@ -154,7 +167,7 @@ Examples :
 #undef USE_LIGHT_PALETTE                        // Add support for color palette (+0k7 code)
 #undef USE_DGR_LIGHT_SEQUENCE                   // Add support for device group light sequencing (requires USE_DEVICE_GROUPS) (+0k2 code)
 #undef USE_COUNTER                              // Enable inputs as counter (+0k8 code)
-#undef USE_DS18x20                              // Add support for DS18x20 sensors with id sort, single scan and read retry (+2k6 code)
+//#undef USE_DS18x20                              // Add support for DS18x20 sensors with id sort, single scan and read retry (+2k6 code)
 #undef USE_I2C                                  // I2C using library wire (+10k code, 0k2 mem, 124 iram)
 #undef USE_IR_REMOTE                            // Send IR remote commands using library IRremoteESP8266 and ArduinoJson (+4k3 code, 0k3 mem, 48 iram)
 

@@ -16,6 +16,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifdef SS_SHELLY1
+void resetSwitchCounter(void); //declaration only
+#endif
 
 const char kTasmotaCommands[] PROGMEM = "|"  // No prefix
   D_CMND_BACKLOG "|" D_CMND_DELAY "|" D_CMND_POWER "|" D_CMND_STATUS "|" D_CMND_STATE "|" D_CMND_SLEEP "|" D_CMND_UPGRADE "|" D_CMND_UPLOAD "|" D_CMND_OTAURL "|"
@@ -1748,6 +1751,14 @@ void CmndReset(void)
     TasmotaGlobal.restart_flag = 210 + XdrvMailbox.payload;
     Response_P(PSTR("{\"" D_CMND_RESET "\":\"" D_JSON_ERASE ", " D_JSON_RESET_AND_RESTARTING "\"}"));
     break;
+
+  #ifdef SS_SHELLY1
+   case 10:
+    resetSwitchCounter();
+    Response_P(PSTR("{\"" D_CMND_RESET "\":\"Reset switch counter\"}"));
+    break;
+  #endif
+
   case 99:
     Settings.bootcount = 0;
     Settings.bootcount_reset_time = 0;

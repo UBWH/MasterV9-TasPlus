@@ -22,6 +22,21 @@
 
 const uint8_t PARAM8_SIZE = 18;            // Number of param bytes (SetOption)
 
+#ifdef  SG_RANGE
+typedef union {                            // Ultrasonic Calibrations
+  uint32_t data;                           
+  struct {                  
+    uint16_t  mm;                          // raw mm value
+    uint16_t  value;                       // display value
+  };
+} djlk_calculation_pair_t;	
+
+typedef struct {
+  char                    cUnits[STRING_CALCULATION_UNITS];   //6 chars + 0  =  7 bytes
+  uint8_t                 enabled;                            //1=enabled    =  1 byte
+  djlk_calculation_pair_t calPair[MAX_CALCULATIONS];          //4 bytes x 4  = 16 bytes
+} djlk_calculation_t;                                         //total        = 24 bytes 
+#else
 typedef union {                            // Watchdog
   uint16_t data;                           
   struct {                  
@@ -32,7 +47,11 @@ typedef union {                            // Watchdog
     uint16_t socket         : 2;           // Sockets 0->3
     uint16_t free1          : 2;           // unused
   };
-} watchdog_t;													  
+} watchdog_t;			
+#endif
+
+
+
 typedef union {                            // Restricted by MISRA-C Rule 18.4 but so useful...
   uint32_t data;                           // Allow bit manipulation using SetOption
   struct {                                 // SetOption0 .. SetOption31
@@ -652,13 +671,19 @@ struct {
   uint8_t       shd_leading_edge;          // F5B
   uint16_t      shd_warmup_brightness;     // F5C
   uint8_t       shd_warmup_time;           // F5E
-  uint8_t       free_f5e;          		   // F5F
+  uint8_t       free_f5e;          		     // F5F
 
   //uint8_t       free_f60[72];              // F60 - Decrement if adding new Setting variables just above and below
   uint8_t       free_f60[44];              // F60 - Decrement if adding new Setting variables just above and below
   uint32_t      wan_ip_address; 		       // If not zero, block WAN requests except from this IPV4 address	(4 bytes total)								
-  watchdog_t    Watchdog[MAX_WATCHDOGS];   // Ping Watchdogs (16 bits / 2 bytes each = 8 bytes total)					 
+  
+  #ifdef SG_RANGE
+  djlk_calculation_t  djlk_calculation;     // 24 bytes total
+  #else
+  watchdog_t    Watchdog[MAX_WATCHDOGS];    // Ping Watchdogs (16 bits / 2 bytes each = 8 bytes total)					 
   uint32_t      ping_address[MAX_WATCHDOGS];//IPV4 addresses (4 x 4 = 16 bytes)
+                                            // 24 bytes total
+  #endif
   // Only 32 bit boundary variables below
 
   uint64_t      rf_protocol_mask;          // FA8
