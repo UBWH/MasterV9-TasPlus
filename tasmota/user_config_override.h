@@ -112,18 +112,28 @@ Examples :
 #endif
 
 #ifdef  SS_SHELLY1
+#define MODULE          SHELLY1       //Module 45
+
 #ifdef  SG_TEMP
 #define PRODUCT_NAME    "SG-TEMP"
+#elif defined(SG_DHT)
+#define PRODUCT_NAME    "SG-DHT"
 #else
 #define PRODUCT_NAME    "SS-1CHPro"
 #endif
-#define MODULE          SHELLY1       //Module 45
+
 #endif
 
 #ifdef  SG_RANGE
 #define PRODUCT_NAME    "SG-RANGE"
 #define MODULE          SONOFF_SV       
 #endif
+
+#ifdef  SG_TEMP_AC
+#define PRODUCT_NAME    "SG-TEMP-AC"
+#define MODULE          SONOFF_TH       
+#endif
+
 
 #ifndef PRODUCT_NAME
 #define PRODUCT_NAME    "tasmota"

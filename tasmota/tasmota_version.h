@@ -23,6 +23,10 @@
 const uint32_t VERSION = 0x09020000
                              + 0x01        //Migrate TasPlus V8->V9
                              + 0x01        //Add SG-RANGE
+                             + 0x01        //ADD SG-TEMP-AC  (Sonoff TH10)
+                                           //Add Configure Temp for SG-TEMP/SG-TEMP-AC (Relay on/off)
+                                           //Add MqttKeepAlive
+                             + 0x01        //BUG: Watchdogs now work if WiFi down
                              
                         ;
 #endif  // _TASMOTA_VERSION_H_

@@ -60,6 +60,16 @@ uint8_t ds18x20_sensor_curr = 0;
 unsigned long w1_power_until = 0;
 #endif
 
+#if (defined(SG_TEMP) || defined(SG_TEMP_AC))
+bool  getDS18xTemp(uint index, float & fTemp){
+  if((index <DS18X20_MAX_SENSORS) && (ds18x20_sensor[index].valid)){
+    fTemp = ds18x20_sensor[index].temperature;
+    return true;
+  }
+  return false;
+}
+#endif
+
 /*********************************************************************************************\
  * Embedded tuned OneWire library
 \*********************************************************************************************/
@@ -303,6 +313,8 @@ bool OneWireCrc8(uint8_t *addr)
 
 void Ds18x20Init(void)
 {
+//  AddLog_P(LOG_LEVEL_INFO, PSTR("Ds18x20Init() "));	
+
   uint64_t ids[DS18X20_MAX_SENSORS];
 
   ds18x20_pin = Pin(GPIO_DSB);
@@ -321,6 +333,8 @@ void Ds18x20Init(void)
     if (!OneWireSearch(ds18x20_sensor[ds18x20_sensors].address)) {
       break;
     }
+  //AddLog_P(LOG_LEVEL_INFO, PSTR(".... found %u"),ds18x20_sensors);	
+
     if (OneWireCrc8(ds18x20_sensor[ds18x20_sensors].address) &&
        ((ds18x20_sensor[ds18x20_sensors].address[0] == DS18S20_CHIPID) ||
         (ds18x20_sensor[ds18x20_sensors].address[0] == DS1822_CHIPID) ||

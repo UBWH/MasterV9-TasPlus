@@ -35,7 +35,7 @@ const char kMqttCommands[] PROGMEM = "|"  // No prefix
 #if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
   D_CMND_MQTTFINGERPRINT "|"
 #endif
-  D_CMND_MQTTUSER "|" D_CMND_MQTTPASSWORD "|"
+  D_CMND_KEEPALIVE "|" D_CMND_MQTTUSER "|" D_CMND_MQTTPASSWORD "|"
 #if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
   D_CMND_TLSKEY "|"
 #endif
@@ -47,7 +47,7 @@ void (* const MqttCommand[])(void) PROGMEM = {
 #if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
   &CmndMqttFingerprint,
 #endif
-  &CmndMqttUser, &CmndMqttPassword,
+  &CmndMqttKeepAlive,&CmndMqttUser, &CmndMqttPassword,
 #if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
   &CmndTlsKey,
 #endif
@@ -185,6 +185,7 @@ void MqttInit(void)
 #else // USE_MQTT_TLS
   MqttClient.setClient(EspClient);
 #endif // USE_MQTT_TLS
+  MqttClient.setKeepAlive(Settings.tasPlusMQTTKeepAlive?Settings.tasPlusMQTTKeepAlive:MQTT_KEEPALIVE);
 }
 
 bool MqttIsConnected(void)
@@ -834,6 +835,15 @@ void CmndMqttFingerprint(void)
   }
 }
 #endif
+
+//TasPlus addition
+void CmndMqttKeepAlive(void){
+ if ((XdrvMailbox.payload > 10) && (XdrvMailbox.payload < 256)) {
+    Settings.tasPlusMQTTKeepAlive = XdrvMailbox.payload;
+    TasmotaGlobal.restart_flag = 2;
+  }
+  ResponseCmndNumber(Settings.tasPlusMQTTKeepAlive);
+}
 
 void CmndMqttUser(void)
 {

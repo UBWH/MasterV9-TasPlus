@@ -356,6 +356,8 @@
 #define D_CMND_MQTTFINGERPRINT "MqttFingerprint"
 #define D_CMND_MQTTCLIENT "MqttClient"
 #define D_CMND_MQTTUSER "MqttUser"
+#define D_CMND_KEEPALIVE "MqttKeepAlive"
+
 #define D_CMND_MQTTPASSWORD "MqttPassword"
 #define D_CMND_TLSKEY "TLSKey"
 #define D_CMND_FULLTOPIC "FullTopic"

@@ -93,6 +93,7 @@ class PubSubClient : public Print {
 private:
    Client* _client;
    uint8_t buffer[MQTT_MAX_PACKET_SIZE];
+   uint16_t tasPlusKeepAlive;
    uint16_t nextMsgId;
    unsigned long lastOutActivity;
    unsigned long lastInActivity;
@@ -136,6 +137,7 @@ public:
    PubSubClient& setCallback(MQTT_CALLBACK_SIGNATURE);
    PubSubClient& setClient(Client& client);
    PubSubClient& setStream(Stream& stream);
+   PubSubClient& setKeepAlive(uint16_t keepAlive);
 
    boolean connect(const char* id);
    boolean connect(const char* id, const char* user, const char* pass);

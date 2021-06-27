@@ -12,12 +12,14 @@ PubSubClient::PubSubClient() {
     this->_client = NULL;
     this->stream = NULL;
     setCallback(NULL);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
 
 PubSubClient::PubSubClient(Client& client) {
     this->_state = MQTT_DISCONNECTED;
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
 
 PubSubClient::PubSubClient(IPAddress addr, uint16_t port, Client& client) {
@@ -25,26 +27,33 @@ PubSubClient::PubSubClient(IPAddress addr, uint16_t port, Client& client) {
     setServer(addr, port);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(IPAddress addr, uint16_t port, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(addr,port);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(IPAddress addr, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client) {
     this->_state = MQTT_DISCONNECTED;
     setServer(addr, port);
     setCallback(callback);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(IPAddress addr, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(addr,port);
     setCallback(callback);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
 
 PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, Client& client) {
@@ -52,26 +61,33 @@ PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, Client& client) {
     setServer(ip, port);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(ip,port);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client) {
     this->_state = MQTT_DISCONNECTED;
     setServer(ip, port);
     setCallback(callback);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(ip,port);
     setCallback(callback);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
 
 PubSubClient::PubSubClient(const char* domain, uint16_t port, Client& client) {
@@ -79,26 +95,33 @@ PubSubClient::PubSubClient(const char* domain, uint16_t port, Client& client) {
     setServer(domain,port);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(const char* domain, uint16_t port, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(domain,port);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(const char* domain, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client) {
     this->_state = MQTT_DISCONNECTED;
     setServer(domain,port);
     setCallback(callback);
     setClient(client);
     this->stream = NULL;
+    setKeepAlive(MQTT_KEEPALIVE);
 }
+
 PubSubClient::PubSubClient(const char* domain, uint16_t port, MQTT_CALLBACK_SIGNATURE, Client& client, Stream& stream) {
     this->_state = MQTT_DISCONNECTED;
     setServer(domain,port);
     setCallback(callback);
     setClient(client);
     setStream(stream);
+    setKeepAlive(MQTT_KEEPALIVE);
 }
 
 boolean PubSubClient::connect(const char *id) {
@@ -170,9 +193,20 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
 
             buffer[length++] = v;
 
-            buffer[length++] = ((MQTT_KEEPALIVE) >> 8);
-            buffer[length++] = ((MQTT_KEEPALIVE) & 0xFF);
+ //TasPlus use settings for KeepAlive
+ // Settings.tasPlusMQTTKeepAlive = 10 to 255 (seconds)
+ // Ask MQTT server to use Settings.tasPlusMQTTKeepAlive secs
+ // And we send PINGS every (Settings.tasPlusMQTTKeepAlive/2) secs
 
+            if(this->tasPlusKeepAlive){
+                buffer[length++] = ((this->tasPlusKeepAlive) >> 8);
+                buffer[length++] = ((this->tasPlusKeepAlive) & 0xFF);
+            } else {
+                //Default
+                buffer[length++] = ((MQTT_KEEPALIVE) >> 8);
+                buffer[length++] = ((MQTT_KEEPALIVE) & 0xFF);
+            }
+ 
             CHECK_STRING_LENGTH(length,id)
             length = writeString(id,buffer,length);
             if (willTopic) {
@@ -313,7 +347,11 @@ uint16_t PubSubClient::readPacket(uint8_t* lengthLength) {
 boolean PubSubClient::loop() {
     if (connected()) {
         unsigned long t = millis();
-        if ((t - lastInActivity > MQTT_KEEPALIVE*1000UL) || (t - lastOutActivity > MQTT_KEEPALIVE*1000UL)) {
+      //unsigned long ulMQTTInterval = (MQTT_KEEPALIVE-5)*1000UL;   //send PINGREQ at least every 25 secs
+        unsigned long ulMQTTInterval = this->tasPlusKeepAlive*500UL;    //Half of MqttKeepAlive
+
+//      if ((t - lastInActivity > MQTT_KEEPALIVE*1000UL) || (t - lastOutActivity > MQTT_KEEPALIVE*1000UL)) {
+        if ((t - lastInActivity > ulMQTTInterval) || (t - lastOutActivity > ulMQTTInterval)) {
             if (pingOutstanding) {
                 this->_state = MQTT_CONNECTION_TIMEOUT;
                 _client->stop();
@@ -689,4 +727,9 @@ PubSubClient& PubSubClient::setStream(Stream& stream){
 
 int PubSubClient::state() {
     return this->_state;
+}
+
+PubSubClient& PubSubClient::setKeepAlive(uint16_t keepAlive) {
+    this->tasPlusKeepAlive = keepAlive;
+    return *this;
 }

@@ -226,8 +226,30 @@ void DhtInit(void)
   }
 }
 
+#ifdef SG_DHT
+/**********************************************
+Rarely (once per month??) the AM230x sensors suddenly stop responding
+Only fix is to cycle power to sensor
+Using a Shelly1, wire as follows
+GND---------------- GND (Black)
+GPIO0-------------- Data (Yellow)
+GPIO1/TXD --------- 3V3 (Red)
+
+And configure GPIO1 as Relay2
+Relay2 ON->OFF->ON = power cycle the sensor
+**********************************************/
+uint uNumDHTbad=0;
+bool bPowerCycleDHT = false;
+#endif
+
 void DhtEverySecond(void)
 {
+#ifdef SG_DHT
+  if(bPowerCycleDHT){
+    ExecuteCommandPower(2, POWER_ON, SRC_IGNORE);
+    bPowerCycleDHT = false;
+  }
+#endif
   if (TasmotaGlobal.uptime &1) {  // Every 2 seconds
     for (uint32_t sensor = 0; sensor < dht_sensors; sensor++) {
       // DHT11 and AM2301 25mS per sensor, SI7021 5mS per sensor
@@ -236,6 +258,15 @@ void DhtEverySecond(void)
         if (Dht[sensor].lastresult > DHT_MAX_RETRY) {  // Reset after 8 misses
           Dht[sensor].t = NAN;
           Dht[sensor].h = NAN;
+
+#ifdef SG_DHT
+          if(!bPowerCycleDHT){
+            uNumDHTbad++;
+            bPowerCycleDHT=true;
+            ExecuteCommandPower(2, POWER_OFF, SRC_IGNORE);
+          }
+#endif
+
         }
       }
     }
@@ -268,6 +299,9 @@ bool Xsns06(uint8_t function)
 #ifdef USE_WEBSERVER
       case FUNC_WEB_SENSOR:
         DhtShow(0);
+#ifdef SG_DHT
+        WSContentSend_PD(PSTR("{s}SensorBad{m}%u"),uNumDHTbad );
+#endif
         break;
 #endif  // USE_WEBSERVER
       case FUNC_INIT:

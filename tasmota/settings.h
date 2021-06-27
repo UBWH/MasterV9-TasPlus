@@ -22,6 +22,19 @@
 
 const uint8_t PARAM8_SIZE = 18;            // Number of param bytes (SetOption)
 
+typedef union {
+  uint8_t data;                            //3 bytes
+  struct {
+    int8_t  tempAbove;
+    int8_t  tempBelow;
+    uint8_t enabled:1;                     //Enabled True/False
+    uint8_t AboveOn:1;
+    uint8_t BelowOn:1;
+    uint8_t unused:5;
+  };
+} temp_control_t;
+
+
 #ifdef  SG_RANGE
 typedef union {                            // Ultrasonic Calibrations
   uint32_t data;                           
@@ -674,7 +687,18 @@ struct {
   uint8_t       free_f5e;          		     // F5F
 
   //uint8_t       free_f60[72];              // F60 - Decrement if adding new Setting variables just above and below
-  uint8_t       free_f60[44];              // F60 - Decrement if adding new Setting variables just above and below
+  
+  //#if (defined (SG_TEMP) || defined (SG_TEMP_AC))
+  temp_control_t temp_control;             // 3 bytes
+ // #else
+ // uint8_t       free_f60[44];              // F60 - Decrement if adding new Setting variables just above and below
+ // #endif
+  
+ // uint8_t       free_f60[41];              // F60 - Decrement if adding new Setting variables just above and below
+  uint8_t       tasPlusMQTTKeepAlive;      // 1 byte 0-255 seconds      
+  uint8_t       free_f60[40];              // F60 - Decrement if adding new Setting variables just above and below
+  
+  
   uint32_t      wan_ip_address; 		       // If not zero, block WAN requests except from this IPV4 address	(4 bytes total)								
   
   #ifdef SG_RANGE

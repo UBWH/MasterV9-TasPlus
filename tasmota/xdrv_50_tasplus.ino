@@ -145,8 +145,9 @@ void HandleWatchdog(void){
 
   if (Webserver->hasArg("save")) {
     WatchdogSaveSettings();
-    HandleConfiguration();
-    webRedirect(PSTR("/cn"));								//PRG to Config
+    WebRestart(1);
+    //HandleConfiguration();
+    //webRedirect(PSTR("/cn"));								//PRG to Config
     return;
   }
 
@@ -415,7 +416,9 @@ struct statusWatchdog_t {
 /************************************************************/
 void WatchdogPingResponse(uint8_t iWatchdog, uint8_t success){
   
-  if(TasmotaGlobal.global_state.wifi_down ||  UpTime() < 30) return;
+  if( //  if WiFi down .. still record as failure TasmotaGlobal.global_state.wifi_down ||
+      UpTime() < 30
+    ) return;
 
   if(success){
     statusWatchdog[iWatchdog].uMissedPings=0;
@@ -512,6 +515,239 @@ void WSTasPlusButton(const char* Action,const char* Text){
       ),Action,Text);
 }//WSTasPlusButton
 
+#if defined(SG_TEMP) || defined(SG_TEMP_AC)
+
+void TempChanged(float fTemp){
+  if(Settings.temp_control.enabled){
+    bool bRelayOn = bitRead(TasmotaGlobal.power,0);
+    
+    if(fTemp > Settings.temp_control.tempAbove){
+      if(bRelayOn){
+        //Relay is ON
+        if(!Settings.temp_control.AboveOn){
+          ExecuteCommandPower(1, POWER_OFF, SRC_IGNORE);
+        }
+      } else {
+        //Relay is OFF
+        if(Settings.temp_control.AboveOn){
+          ExecuteCommandPower(1, POWER_ON, SRC_IGNORE);
+        }
+      }
+    }//Temp above
+
+    if(fTemp < Settings.temp_control.tempBelow){
+      if(bRelayOn){
+        //Relay is ON
+        if(!Settings.temp_control.BelowOn){
+          ExecuteCommandPower(1, POWER_OFF, SRC_IGNORE);
+        }
+      } else {
+        //Relay is OFF
+        if(Settings.temp_control.BelowOn){
+          ExecuteCommandPower(1, POWER_ON, SRC_IGNORE);
+        }
+      }
+    }//Temp below
+
+    if(fTemp > Settings.temp_control.tempBelow && fTemp < Settings.temp_control.tempAbove){
+      if(Settings.temp_control.AboveOn == Settings.temp_control.BelowOn){
+        if(bRelayOn == Settings.temp_control.AboveOn)
+          ExecuteCommandPower(1, Settings.temp_control.AboveOn?POWER_OFF:POWER_ON, SRC_IGNORE);
+      }
+    }//Between limits
+  }//enabled
+  //char cTemperature[FLOATSZ];
+  //dtostrfd(fTemp, 1, cTemperature);
+  //AddLog_P(LOG_LEVEL_INFO,  PSTR("DS18x[0]  temp:%s power:%u"),cTemperature, TasmotaGlobal.power);	
+
+}//TempChanged
+
+
+#define WEB_TEMP		          "te"
+#define DIV_TEMP              "DT"
+#define DIV_BETWEEN           "DB"
+#define ID_TA                 "TA"
+#define ID_TB                 "TB"
+#define NAME_RA               "RA"
+#define NAME_RB               "RB"
+
+const char SCRIPT_CLICK_ENABLE[] PROGMEM = 
+"function cen(){"                                          
+    "eb('" DIV_TEMP "').style.display = eb('" DIV_ENABLE "').checked?'block':'none';"
+"}"
+"wl(cen);";
+
+String sTempSaveError="";
+
+const char SCRIPT_CLICK_RELAY[] PROGMEM = 
+"function cr(){"   
+    "var el = document.getElementsByName('" NAME_RA "');"
+    "var RA = el[0].checked;"
+        "el = document.getElementsByName('" NAME_RB "');"
+    "var RB = el[0].checked;"
+    "var s = 'No change';"
+    "if(RA == RB)s = RA?'OFF':'ON';"
+    "eb('" DIV_BETWEEN "').innerHTML = s"                                       
+//    "switch (id){"
+//     "case '" ID_RAON "':"
+//     "case '" ID_RBOFF "':"
+//      "eb('" ID_RAON "').checked=true;"
+//      "eb('" ID_RBON "').checked=false;"
+//      "eb('" ID_RAOFF "').checked=false;"
+//      "eb('" ID_RBOFF "').checked=true;"
+//      "break;"
+
+//     "case '" ID_RBON "':"
+//     "case '" ID_RAOFF "':"
+//      "eb('" ID_RAON "').checked=false;"
+//      "eb('" ID_RBON "').checked=true;"
+//      "eb('" ID_RAOFF "').checked=true;"
+//      "eb('" ID_RBOFF "').checked=false;"
+//      "break;"
+//  "}"
+"}"
+"wl(cr);"
+;
+
+
+void HandleTempConfiguration(void){
+  char parameter[FLOATSZ];
+
+  if (!HttpCheckPriviledgedAccess()) { return; }
+
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP), PSTR(D_CONFIGURE_THERMO));
+
+  if (Webserver->hasArg("save")) {
+    if(TempSaveSettings()){
+      HandleConfiguration();
+      //webRedirect(PSTR("/cn"));								//PRG to Config
+      return;
+    } 
+  }
+
+  WSContentStart_P(PSTR(D_CONFIGURE_THERMO));
+  WSContentSend_P(SCRIPT_CLICK_ENABLE);
+  WSContentSend_P(SCRIPT_CLICK_RELAY);
+  
+  WSContentSendStyle();
+  htmlPageHeader(PSTR(D_CONFIGURE_THERMO));
+  
+  htmlTag(TM_START,TAG_FIELDSET);
+   htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp" D_CONFIGURE_THERMO "&nbsp;</b>")); 
+   WSContentSend_P(PSTR(" <form method='post' action=''>"));   
+
+    if(sTempSaveError.length()){
+      htmlTag(TM_START,TAG_FIELDSET);
+          WSContentSend_P(PSTR("❌ %s"),sTempSaveError.c_str());
+      htmlTag(TM_END,TAG_FIELDSET);
+    }
+
+      WSContentSend_P(PSTR("<label id='ce' title='Click to Enable/Disable Relay Control'>" ));  
+        WSContentSend_P(PSTR("<input onclick='cen()' id='" DIV_ENABLE "' type='checkbox' %s><b>Enable?</b>"
+	  	          ),(Settings.temp_control.enabled?"checked":""));  
+    	htmlTag(TM_END ,TAG_LABEL);
+
+      htmlTag(TM_START,TAG_DIV,PSTR(DIV_TEMP ));
+
+        htmlTag(TM_START,TAG_TABLE,nullptr,PSTR("width:100%%;border: 1px solid black;"));
+		      htmlTag(TM_START,TAG_TR);
+		        htmlTag(TM_START,TAG_TH); 
+              WSContentSend_P(PSTR("When Temp<br>is ..."));
+		        htmlTag(TM_START,TAG_TH,nullptr,PSTR("text-align:center")); 
+              WSContentSend_P(PSTR("&deg;C"));
+            WSContentSend_P(PSTR("<th colspan='2' style='text-align:center'>"));
+              WSContentSend_P(PSTR("turn Relay ..."));
+              
+		      htmlTag(TM_START,TAG_TR);
+		        htmlTag(TM_START,TAG_TD,nullptr,PSTR("border: 1px solid;")); 
+             WSContentSend_P(PSTR("Above"));
+		        htmlTag(TM_START,TAG_TD); 
+             WSContentSend_P(PSTR(
+                 "<input type='number' id='%s' value='%d' style='text-align:right;width:4em' max='127' min='-127'>")
+                 ,ID_TA,Settings.temp_control.tempAbove);
+  		      htmlTag(TM_START,TAG_TD);
+              WSContentSend_P(PSTR("<input onclick='cr()' value='ON' name='%s' type='radio' %s>ON")
+                  ,NAME_RA,(Settings.temp_control.AboveOn?"checked":""));
+
+              WSContentSend_P(PSTR("<input onclick='cr()' value='OFF' name='%s' type='radio' %s>OFF")
+                  ,NAME_RA,(!Settings.temp_control.AboveOn?"checked":""));
+
+          htmlTag(TM_START,TAG_TR);
+		        htmlTag(TM_START,TAG_TD,nullptr,PSTR("border: 1px solid;")); 
+             WSContentSend_P(PSTR("Between"));
+  		      htmlTag(TM_START,TAG_TD);
+             WSContentSend_P(PSTR("&nbsp;"));
+		        htmlTag(TM_START,TAG_TD); 
+             WSContentSend_P(PSTR("<div id='%s' style='text-align:center'>%s</div>") ,DIV_BETWEEN,  		     
+              Settings.temp_control.AboveOn!=Settings.temp_control.BelowOn?
+                "No change":(Settings.temp_control.AboveOn?"OFF":"ON")
+              );
+   
+		      htmlTag(TM_START,TAG_TR);
+		        htmlTag(TM_START,TAG_TD,nullptr,PSTR("border: 1px solid;")); 
+             WSContentSend_P(PSTR("Below"));
+		        htmlTag(TM_START,TAG_TD); 
+              WSContentSend_P(PSTR(
+                 "<input type='number' id='%s' value='%d' style='text-align:right;width:4em' max='127' min='-127'>")
+                 ,ID_TB,Settings.temp_control.tempBelow);
+
+  		      htmlTag(TM_START,TAG_TD);
+              WSContentSend_P(PSTR("<input onclick='cr()' value='ON' name='%s' type='radio' %s>ON")
+                  ,NAME_RB,(Settings.temp_control.BelowOn?"checked":""));
+
+              WSContentSend_P(PSTR("<input onclick='cr()' value='OFF' name='%s' type='radio' %s>OFF")
+                  ,NAME_RB,(!Settings.temp_control.BelowOn?"checked":""));
+
+        htmlTag(TM_END,TAG_TABLE);
+
+      htmlTag(TM_END,TAG_DIV);
+
+  htmlTag(TM_END,TAG_FIELDSET);
+      
+  WSContentSend_P(HTTP_FORM_END);
+	WSContentSpaceButton(BUTTON_CONFIGURATION);
+  WSContentStop();
+}//HandleTempConfiguration
+
+/***********************************************************************/
+bool TempSaveSettings(void){
+  char tmp[20];
+  char webindex[20];
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),ID_TA);
+  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  int tempAbove= atoi(tmp);
+  
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),ID_TB);
+  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  int tempBelow = atoi(tmp);
+  
+  if(tempBelow > tempAbove){
+    sTempSaveError="Below temperature is greater than<br>Above temperature.";
+    return false;
+  }
+
+  Settings.temp_control.tempAbove = tempAbove;
+  Settings.temp_control.tempBelow = tempBelow;
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),DIV_ENABLE);
+  Settings.temp_control.enabled=Webserver->hasArg(webindex);  
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),NAME_RA);
+  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  Settings.temp_control.AboveOn = !strcmp(tmp,"ON");
+
+  snprintf_P(webindex, sizeof(webindex), PSTR("%s"),NAME_RB);
+  WebGetArg(webindex, tmp, sizeof(tmp)); 
+  Settings.temp_control.BelowOn = !strcmp(tmp,"ON");
+
+  sTempSaveError="";
+  return true;
+
+}//TempSaveSettings
+#endif
+
+
 #ifdef SG_RANGE
 
 #define WEB_DJLK		          "dj"
@@ -550,23 +786,6 @@ void HandleDJLKConfiguration(void){
    htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbsp" D_CONFIGURE_DJLK "&nbsp;</b>")); 
    WSContentSend_P(PSTR(" <form method='post' action=''>"));   
 
- /*   no longer used as teleperiod manages update rate
-    //Transmit interval
-      htmlTag(TM_START,TAG_TABLE,nullptr,PSTR("width:100%%;border: 1px solid black;"));
-		    htmlTag(TM_START,TAG_TR);
-		      htmlTag(TM_START,TAG_TD,nullptr,PSTR("text-align:right;")); 
-            WSContentSend_P(PSTR("Transmit updates every "));
-		      htmlTag(TM_START,TAG_TD); 
-            WSContentSend_P(PSTR("<input title='Set to 0 (zero) to disable all updates. Max.=255' type='number' id='" ID_DJLK_INTERVAL "' min='0' max='255' value='%u'>"),Settings.serial_delimiter);
-		      htmlTag(TM_START,TAG_TD,nullptr,PSTR("text-align:left;")); 
-            WSContentSend_P(PSTR("(seconds, approx.)"));
-		    htmlTag(TM_START,TAG_TR);
-		      WSContentSend_P(PSTR("<td colspan='3' style='text-align:center'>"));
-            WSContentSend_P(PSTR("Set to 0 (zero) to disable all updates"));
-      htmlTag(TM_END,TAG_TABLE);
-
-    htmlTag(TM_START,TAG_BR);
-*/
     htmlTag(TM_START,TAG_FIELDSET);
      htmlTag(TM_STARTEND,TAG_LEGEND,nullptr,nullptr,PSTR("<b>&nbspCalculation&nbsp;</b>")); 
       WSContentSend_P(PSTR("<label id='ce' title='Click to Enable/Disable Calculation'>" ));  
@@ -842,14 +1061,22 @@ bool Xdrv50(uint8_t function){
 
 #ifdef MAX_WATCHDOGS
       Webserver->on("/" WEB_WATCHDOG, HandleWatchdog);
-#else
+#endif
+
+#ifdef SG_RANGE
       Webserver->on("/" WEB_DJLK,HandleDJLKConfiguration);
+#endif
+
+#if  (defined(SG_TEMP_AC) || defined (SG_TEMP))
+      Webserver->on("/" WEB_TEMP,HandleTempConfiguration);
 #endif
       break;
 
     case FUNC_WEB_ADD_BUTTON:											
 #ifdef SG_RANGE
       WSTasPlusButton(WEB_DJLK    	,D_CONFIGURE_DJLK);
+#elif  (defined(SG_TEMP_AC) || defined (SG_TEMP))
+      WSTasPlusButton(WEB_TEMP    	,D_CONFIGURE_THERMO);
 #else
       WSTasPlusButton(WEB_WATCHDOG	,D_WATCHDOG);
 #endif
@@ -862,6 +1089,24 @@ bool Xdrv50(uint8_t function){
 		   WatchdogEvery4Sec();
       }
 //	    AddLog_P(LOG_LEVEL_INFO,  PSTR("state=%u counter=%u"),bSwitchState,uSwitchCounter);	
+#if (defined(SG_TEMP) || defined(SG_TEMP_AC))
+      static float fTemperature;
+      float fTemp;
+      if(getDS18xTemp(0, fTemp)){
+          if(fTemp != fTemperature){
+            fTemperature = fTemp; 
+            TempChanged(fTemp);
+          }
+//          char cTemperature[FLOATSZ];
+//          dtostrfd(fTemp, 1, cTemperature);
+//	        AddLog_P(LOG_LEVEL_INFO,  PSTR("DS18x[0]  temp:%s"),cTemperature);	
+      } else {
+        //Try and re-init to find sensor
+        if(UpTime()>2 && Rtc.utc_time%5==0){	
+		     Ds18x20Init();
+        }
+      }
+#endif
 	    break;
 #endif
 

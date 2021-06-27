@@ -1373,7 +1373,7 @@ const uint8_t kModuleNiceList[] PROGMEM = {
   WEMOS
 };
 
-enum SupportedTemplates8285 {
+enum SupportedTemplates8285 {   //12 usable pins
   TMP_SONOFF_BASIC, TMP_SONOFF_SV, TMP_SONOFF_DUAL, TMP_SONOFF_POW, TMP_SONOFF_LED, TMP_ELECTRODRAGON,
   TMP_EXS_RELAY, TMP_WION, TMP_SONOFF_DEV, TMP_H801, TMP_SONOFF_SC, TMP_SONOFF_BN, TMP_HUAFAN_SS, TMP_SONOFF_BRIDGE,
   TMP_SONOFF_B1, TMP_AILIGHT, TMP_SONOFF_T11, TMP_SUPLA1, TMP_WITTY, TMP_YUNSHAN, TMP_MAGICHOME,
@@ -1382,9 +1382,10 @@ enum SupportedTemplates8285 {
   TMP_TECKIN, TMP_APLIC_WDP303075, TMP_TUYA_DIMMER, TMP_GOSUND, TMP_ARMTRONIX_DIMMERS, TMP_SK03_TUYA, TMP_PS_16_DZ,
   TMP_TECKIN_US, TMP_MANZOKU_EU_4, TMP_OBI2, TMP_YTF_IR_BRIDGE, TMP_DIGOO, TMP_KA10, TMP_ZX2820, TMP_MI_DESK_LAMP, TMP_SP10,
   TMP_WAGA, TMP_SYF05, TMP_EXS_DIMMER, TMP_PWM_DIMMER, TMP_SONOFF_ZB_BRIDGE,
+  TMP_SONOFF_TH,              //FOR SG_TEMP_AC
   TMP_MAXMODULE_8285 };
 
-enum SupportedTemplates8266 {
+enum SupportedTemplates8266 {   //14 usable pins
   TMP_WEMOS = TMP_MAXMODULE_8285, TMP_SONOFF_4CH, TMP_SONOFF_T12, TMP_SONOFF_T13, TMP_SONOFF_DUAL_R2, TMP_SONOFF_IFAN03,
   TMP_MAXMODULE_8266 };
 
@@ -1392,7 +1393,7 @@ const uint8_t kModuleTemplateList[MAXMODULE] PROGMEM = {
   TMP_SONOFF_BASIC,
   TMP_SONOFF_BASIC,     // SONOFF_RF
   TMP_SONOFF_SV,
-  TMP_SONOFF_BASIC,     // SONOFF_TH
+  TMP_SONOFF_TH,        //TMP_SONOFF_BASIC,     // SONOFF_TH //FOR SG_TEMP_AC
   TMP_SONOFF_DUAL,
   TMP_SONOFF_POW,
   TMP_SONOFF_4CH,
@@ -1486,7 +1487,11 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
                         // GPIO11 (SD_CMD   Flash)
     GPI8_REL1,          // GPIO12 Red Led and Relay (0 = Off, 1 = On)
     GPI8_LED1_INV,      // GPIO13 Green Led (0 = On, 1 = Off) - Link and Power status
+#ifdef SG_TEMP_AC
+    GPI8_DSB,            // DS18B20 sensor
+#else
     GPI8_USER,          // GPIO14 Optional sensor
+#endif
     0,                  // GPIO15
     0,                  // GPIO16
     0                   // ADC0 Analog input
@@ -2541,6 +2546,33 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
     0,                  // GPIO15 connected to IO15 pad, also used for logging
     GPI8_KEY1,          // GPIO16 Button
     0
+  }
+
+  //Added for SG_TEMP_AC
+  ,
+   {                    // SONOFF_TH (ESP8266)
+    GPI8_KEY1,          // GPIO00 Button
+    GPI8_USER,          // GPIO01 Serial RXD and Optional sensor
+    GPI8_USER,          // GPIO02 Only available on newer Sonoff Basic R2 V1
+    GPI8_USER,          // GPIO03 Serial TXD and Optional sensor
+    GPI8_USER,          // GPIO04 Optional sensor
+    0,                  // GPIO05
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+                        // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+                        // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+                        // GPIO11 (SD_CMD   Flash)
+    GPI8_REL1,          // GPIO12 Red Led and Relay (0 = Off, 1 = On)
+    GPI8_LED1_INV,      // GPIO13 Green Led (0 = On, 1 = Off) - Link and Power status
+#ifdef SG_TEMP_AC
+    GPI8_DSB,           // GPIO14    DS18B20 sensor
+#else
+    GPI8_USER,          // GPIO14 Optional sensor
+#endif
+    0,                  // GPIO15
+    0,                  // GPIO16
+    0                   // ADC0 Analog input
   }
 };
 

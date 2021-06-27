@@ -254,6 +254,8 @@
 #define D_CONFIGURATION "Configuration"
 #define D_CONFIGURE_CLOCK "Configure Clock"
 #define D_CONFIGURE_DJLK "Configure Range Finder"
+#define D_CONFIGURE_THERMO "Configure Thermostat"
+#define D_CONFIGURE_HUMIDI "Configure Humidistat"
 #define D_INFORMATION "Information"
 #define D_FIRMWARE_UPGRADE "Firmware Upgrade"
 #define D_CONSOLE "Console"
