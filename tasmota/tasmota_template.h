@@ -1497,11 +1497,11 @@ const mytmplt8266 kModules8266[TMP_MAXMODULE_8285] PROGMEM = {
     0                   // ADC0 Analog input
   },
   {                     // SONOFF_SV - Sonoff SV (ESP8266)
-    GPI8_KEY1,          // GPIO00 Button
 #ifdef SG_RANGE
-    GPI8_SBR_TX ,          // GPIO01 SerBr Tx
-    0,
-    GPI8_SBR_RX,           // GPIO03 SerBr Rx
+    GPI8_KEY1,          // GPIO00 Button
+    GPI8_SBR_TX ,       // GPIO01 SerBr Tx
+    0,                  // GPIO02
+    GPI8_SBR_RX,        // GPIO03 SerBr Rx
 #else
     GPI8_USER,          // GPIO01 Serial RXD and Optional sensor
     0,
@@ -2647,6 +2647,28 @@ const mytmplt8285 kModules8285[TMP_MAXMODULE_8266 - TMP_WEMOS] PROGMEM = {
     GPI8_NONE,          // GPIO16 
     0		           // ADC0 A0 Analog input
   }					 
+#elif defined(SG_RANGE_WEMOSD1)
+{
+  //Range Finder - with Wemos D1 mini ESP8266)
+    GPI8_SBR_RX ,       // GPIO00 SerBr Tx
+    GPI8_NONE,          // GPIO01
+    GPI8_SBR_TX,        // GPIO02
+    GPI8_NONE,          // GPIO03 RX Serial TXD and Optional sensor
+    GPI8_NONE,          // GPIO04 D2 Wemos I2C SDA
+    GPI8_NONE,          // GPIO05 D1 Wemos I2C SCL / Wemos Relay Shield (0 = Off, 1 = On) / Wemos WS2812B RGB led Shield
+                        // GPIO06 (SD_CLK   Flash)
+                        // GPIO07 (SD_DATA0 Flash QIO/DIO/DOUT)
+                        // GPIO08 (SD_DATA1 Flash QIO/DIO/DOUT)
+    GPI8_NONE,          // GPIO09 (SD_DATA2 Flash QIO or ESP8285)
+    GPI8_NONE,          // GPIO10 (SD_DATA3 Flash QIO or ESP8285)
+                        // GPIO11 (SD_CMD   Flash)
+    GPI8_NONE,          // GPIO12 D6
+    GPI8_NONE,          // GPIO13 D7
+    GPI8_NONE,          // GPIO14 D5
+    GPI8_NONE,          // GPIO15 D8
+    GPI8_NONE,          // GPIO16 D0 Wemos Wake
+    GPI8_NONE           // ADC0 A0 Analog input
+}
 #else	 
   {                     // WEMOS - Any ESP8266/ESP8285 device like WeMos and NodeMCU hardware (ESP8266)
     GPI8_USER,          // GPIO00 D3 Wemos Button Shield

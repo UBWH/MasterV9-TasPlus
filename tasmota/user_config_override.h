@@ -97,7 +97,7 @@ Examples :
 //This is set in platformio_tasmota_env.ini
 
 #ifdef SP_STRIP
-#define PRODUCT_NAME    "SP-Strip" 
+#define     "SP-Strip" 
 #define MODULE          WEMOS          //Module 18
 #endif
 
@@ -119,14 +119,19 @@ Examples :
 #elif defined(SG_DHT)
 #define PRODUCT_NAME    "SG-DHT"
 #else
-#define PRODUCT_NAME    "SS-1CHPro"
+#define     "SS-1CHPro"
 #endif
 
 #endif
 
 #ifdef  SG_RANGE
+#ifdef  SG_RANGE_WEMOSD1
+#define PRODUCT_NAME    "SG-RANGE-V2"
+#define MODULE          WEMOS       
+#else 
 #define PRODUCT_NAME    "SG-RANGE"
 #define MODULE          SONOFF_SV       
+#endif
 #endif
 
 #ifdef  SG_TEMP_AC
